@@ -17,12 +17,16 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors({
-  origin: ['http://localhost:5173', 'https://po-sppi.vercel.app'],
+const corsOptions = {
+  origin: true, 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -53,7 +57,7 @@ app.get('/health', (req, res) => {
 });
 
 // 404 handler
-app.use((req, res) => {
+app.use((_req, res) => {
   res.status(404).json({
     success: false,
     message: 'Endpoint tidak ditemukan'
@@ -78,7 +82,7 @@ async function startServer() {
     const dbConnected = await testConnection();
     
     if (!dbConnected) {
-      console.error('❌ Gagal koneksi ke database. Server tidak dapat dijalankan.');
+      console.error('Gagal koneksi ke database. Server tidak dapat dijalankan.');
       process.exit(1);
     }
 
@@ -94,7 +98,7 @@ async function startServer() {
       console.log('\n✅ Server ready to accept requests\n');
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    console.error('Failed to start server:', error);
     process.exit(1);
   }
 }

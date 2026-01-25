@@ -8,7 +8,6 @@ import approvalRoutes from './routes/approval.routes.js';
 import keuanganRoutes from './routes/keuangan.routes.js';
 import transferRoutes from './routes/transfer.routes.js';
 import shoppingRoutes from './routes/shopping.routes.js';
-import fs from 'fs';
 
 // Load environment variables
 dotenv.config();
@@ -18,7 +17,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 const corsOptions = {
-  origin: true, 
+  origin: true, // Allow all origins (or configure as needed)
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   credentials: true,
@@ -29,7 +28,7 @@ const corsOptions = {
 app.use((req, res, next) => {
   console.log(`[DEBUG] ${req.method} ${req.url}`);
   // Log headers for debugging CORS
-  console.log('[DEBUG] Headers:', req.headers);
+  // console.log('[DEBUG] Headers:', req.headers);
   next();
 });
 
@@ -38,24 +37,9 @@ app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Create uploads directory if not exists
-// Create uploads directory if not exists
-const uploadDir = process.env.VERCEL ? '/tmp/uploads' : (process.env.UPLOAD_DIR || './uploads');
-
-if (!fs.existsSync(uploadDir)) {
-  try {
-    fs.mkdirSync(uploadDir, { recursive: true });
-  } catch (err) {
-    console.warn('Failed to create upload directory (likely read-only fs):', err);
-  }
-}
-
-// Serve uploaded files
-app.use('/uploads', express.static(uploadDir));
-
 // Root debug route
 app.get('/', (req, res) => {
-  res.json({ message: 'SPPI Backend is running', env: process.env.NODE_ENV, url: req.url });
+  res.json({ message: 'SPPI Backend is running', env: process.env.NODE_ENV });
 });
 
 // Routes
@@ -111,7 +95,6 @@ async function startServer() {
       console.log('='.repeat(50));
       console.log(`📡 Server running on: http://localhost:${PORT}`);
       console.log(`🗄️  Database: ${process.env.DB_NAME}`);
-      console.log(`📁 Upload directory: ${uploadDir}`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log('='.repeat(50));
       console.log('\n✅ Server ready to accept requests\n');

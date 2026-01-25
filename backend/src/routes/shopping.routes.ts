@@ -1,39 +1,11 @@
 import { Router, Response } from 'express';
-import multer from 'multer';
-import path from 'path';
 import { query, queryOne, transaction } from '../config/database.js';
 import { authenticateToken, authorizeRoles, AuthRequest } from '../middleware/auth.js';
 import { validateRequest, shoppingUpdateSchema } from '../middleware/validation.js';
 import { PurchaseOrder, POItem, UserRole } from '../types/index.js';
+import { upload, uploadToCloudinary } from '../middleware/upload.js';
 
 const router = Router();
-
-// Configure multer for multiple file upload
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, process.env.UPLOAD_DIR || './uploads');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'shopping-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: parseInt(process.env.MAX_FILE_SIZE || '5242880') }, // 5MB
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|pdf/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    
-    if (extname && mimetype) {
-      cb(null, true);
-    } else {
-      cb(new Error('Hanya file JPG, PNG, atau PDF yang diizinkan'));
-    }
-  }
-});
 
 // Get active shopping (sudah ditransfer keuangan)
 router.get('/active', authenticateToken, authorizeRoles(UserRole.LAPANGAN), async (req: AuthRequest, res: Response) => {
@@ -211,18 +183,21 @@ router.post('/:poId/proof', authenticateToken, authorizeRoles(UserRole.LAPANGAN)
     // Insert shopping proofs
     await transaction(async (conn) => {
       for (const file of files) {
+        // Upload to Cloudinary
+        const secureUrl = await uploadToCloudinary(file.buffer, 'po_shopping_proofs');
+        
         await conn.execute(
           `INSERT INTO shopping_proofs 
           (po_id, bukti_path, tanggal_belanja, keterangan, uploaded_by)
           VALUES (?, ?, ?, ?, ?)`,
-          [poId, file.path, tanggal_belanja, keterangan || null, req.user!.id]
+          [poId, secureUrl, tanggal_belanja, keterangan || null, req.user!.id]
         );
       }
     });
 
     res.json({
       success: true,
-      message: `${files.length} bukti belanja berhasil di-upload`
+      message: `${files.length} bukti belanja berhasil di-upload ke Cloudinary`
     });
   } catch (error) {
     console.error('Upload shopping proof error:', error);
@@ -291,7 +266,12 @@ router.post('/:poId/complete', authenticateToken, authorizeRoles(UserRole.LAPANG
         // Find uploaded file for this item
         // Frontend should append file with key 'proof_item_{itemId}'
         const proofFile = files.find(f => f.fieldname === `proof_item_${item_id}`);
-        const bukti_foto = proofFile ? proofFile.path : null;
+        let bukti_foto = null;
+
+        if (proofFile) {
+            // Upload to Cloudinary
+            bukti_foto = await uploadToCloudinary(proofFile.buffer, 'po_item_proofs');
+        }
 
         // Get item to calculate subtotal
         const [item]: any = await conn.execute(

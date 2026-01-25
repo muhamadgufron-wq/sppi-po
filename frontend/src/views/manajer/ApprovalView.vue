@@ -193,18 +193,7 @@ function closeImageViewer() {
   showImageViewer.value = false;
 }
 
-function formatDeviation(real: number, approved: number) {
-  const diff = (approved || 0) - (real || 0);
-  const prefix = diff > 0 ? '+' : (diff < 0 ? '-' : '');
-  return `Rp ${prefix}${formatCurrency(Math.abs(diff))}`;
-}
 
-function getDeviationClass(real: number, approved: number) {
-  const diff = (approved || 0) - (real || 0);
-  if (diff < 0) return 'text-red-600'; // Over budget
-  if (diff > 0) return 'text-green-600'; // Under budget
-  return 'text-neutral-500';
-}
 </script>
 
 <style>

@@ -216,7 +216,9 @@ function viewImage(url: string) {
 
 function viewTransferProof() {
   if (po.value?.transfer?.bukti_transfer_path) {
-    currentImageUrl.value = `http://localhost:3000/${po.value.transfer.bukti_transfer_path}`;
+    currentImageUrl.value = po.value.transfer.bukti_transfer_path.startsWith('http') 
+      ? po.value.transfer.bukti_transfer_path 
+      : `http://localhost:3000/${po.value.transfer.bukti_transfer_path}`;
     currentImageIndex.value = 0;
     totalImages.value = 1;
     imageType.value = 'transfer';
@@ -233,14 +235,18 @@ function closeImageViewer() {
 function prevImage() {
   if (currentImageIndex.value > 0 && po.value?.bukti_belanja_parsed) {
     currentImageIndex.value--;
-    currentImageUrl.value = `http://localhost:3000/${po.value.bukti_belanja_parsed[currentImageIndex.value].path}`;
+    currentImageUrl.value = po.value.bukti_belanja_parsed[currentImageIndex.value].path.startsWith('http')
+      ? po.value.bukti_belanja_parsed[currentImageIndex.value].path
+      : `http://localhost:3000/${po.value.bukti_belanja_parsed[currentImageIndex.value].path}`;
   }
 }
 
 function nextImage() {
   if (currentImageIndex.value < totalImages.value - 1 && po.value?.bukti_belanja_parsed) {
     currentImageIndex.value++;
-    currentImageUrl.value = `http://localhost:3000/${po.value.bukti_belanja_parsed[currentImageIndex.value].path}`;
+    currentImageUrl.value = po.value.bukti_belanja_parsed[currentImageIndex.value].path.startsWith('http')
+      ? po.value.bukti_belanja_parsed[currentImageIndex.value].path
+      : `http://localhost:3000/${po.value.bukti_belanja_parsed[currentImageIndex.value].path}`;
   }
 }
 
@@ -416,13 +422,13 @@ function getDeviationClass(real: number, approved: number) {
                     {{ formatDeviation((item.qty_estimasi || 0) * (item.harga_real || 0), item.subtotal_approved || ((item.qty_estimasi || 0) * (item.harga_approved || 0))) }}
                   </td>
                   <td v-if="showRealPrices" class="p-3 text-center">
-                     <img 
-                       v-if="item.bukti_foto"
-                       :src="`http://localhost:3000/${item.bukti_foto}`" 
-                       class="w-8 h-8 object-cover rounded border border-slate-200 mx-auto cursor-pointer hover:scale-110 transition-transform"
-                       @click.stop="viewImage(`http://localhost:3000/${item.bukti_foto}`)"
-                       title="Lihat Bukti"
-                     />
+                       <img 
+                         v-if="item.bukti_foto"
+                         :src="item.bukti_foto.startsWith('http') ? item.bukti_foto : `http://localhost:3000/${item.bukti_foto}`" 
+                         class="w-8 h-8 object-cover rounded border border-slate-200 mx-auto cursor-pointer hover:scale-110 transition-transform"
+                         @click.stop="viewImage(item.bukti_foto.startsWith('http') ? item.bukti_foto : `http://localhost:3000/${item.bukti_foto}`)"
+                         title="Lihat Bukti"
+                       />
                      <span v-else class="text-[10px] text-slate-300">-</span>
                   </td>
                 </tr>

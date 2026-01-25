@@ -9,18 +9,16 @@ import keuanganRoutes from './routes/keuangan.routes.js';
 import transferRoutes from './routes/transfer.routes.js';
 import shoppingRoutes from './routes/shopping.routes.js';
 import fs from 'fs';
-import path from 'path';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
-export default app;
 const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors({
-  origin: true, // Reflect request origin to support credentials
+  origin: ['http://localhost:5173', 'https://po-sppi.vercel.app'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -101,4 +99,10 @@ async function startServer() {
   }
 }
 
-startServer();
+// Start server only if not in Vercel
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+// Export for Vercel
+export default app;

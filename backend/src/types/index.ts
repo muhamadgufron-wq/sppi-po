@@ -73,6 +73,7 @@ export interface PurchaseOrder {
   created_at: Date;
   updated_at: Date;
   items?: POItem[];
+  transfers?: Transfer[];
 }
 
 export interface POItem {

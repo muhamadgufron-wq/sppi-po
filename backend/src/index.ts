@@ -15,6 +15,7 @@ import path from 'path';
 dotenv.config();
 
 const app = express();
+export default app;
 const PORT = process.env.PORT || 3000;
 
 // Middleware

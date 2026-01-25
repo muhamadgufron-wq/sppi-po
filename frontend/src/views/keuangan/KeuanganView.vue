@@ -2,6 +2,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAutoRefresh } from '../../composables/useAutoRefresh';
 
 import api from '../../services/api';
 import { 
@@ -29,6 +30,9 @@ const isHistory = computed(() => router.currentRoute.value.query.tab === 'histor
 onMounted(() => {
   loadPOData();
 });
+
+// Auto-refresh disabled to prevent resetting form inputs
+// useAutoRefresh(loadPOData);
 
 watch(() => router.currentRoute.value.query.tab, () => {
   loadPOData();
@@ -333,6 +337,15 @@ function closeImageViewer() {
                 <div>
                   <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 block md:text-right">Total Approved</span>
                   <span class="text-lg font-bold text-slate-800">Rp {{ formatCurrency(po.total_approved || 0) }}</span>
+                  <!-- New: Transfer Proof Button -->
+                   <button 
+                     v-if="po.transfers && po.transfers.length > 0 && po.transfers[0].proof_image"
+                     @click.stop="viewImage(po.transfers[0].proof_image.startsWith('http') ? po.transfers[0].proof_image : `http://localhost:3000/${po.transfers[0].proof_image}`)"
+                     class="flex items-center gap-1 text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-100 hover:bg-purple-100 transition-colors mt-1"
+                   >
+                     <FileText class="w-3 h-3" />
+                     Lihat Transfer
+                   </button>
                 </div>
                 <!-- Progress Bar / Status Text -->
                 <div class="flex items-center gap-2 mt-1">
@@ -381,6 +394,7 @@ function closeImageViewer() {
                     <th class="px-4 py-3 text-center">Satuan</th>
                     <th class="px-4 py-3 text-right">Harga Approved</th>
                     <th class="px-4 py-3 text-right">Subtotal</th>
+                    <th class="px-4 py-3 text-center">Bukti Transfer</th>
                     <th class="px-4 py-3 text-center">Bukti Belanja</th>
                     <th class="px-4 py-3 text-center">Status</th>
                   </tr>
@@ -419,12 +433,26 @@ function closeImageViewer() {
                     <td class="px-4 py-3 text-right text-slate-600">Rp {{ formatCurrency(item.harga_approved || 0) }}</td>
                     <td class="px-4 py-3 text-right font-bold text-emerald-600">Rp {{ formatCurrency(item.subtotal_approved || 0) }}</td>
                     <td class="px-4 py-3 text-center">
+                       <div v-if="item.transfer_id">
+                         <div v-for="t in po.transfers" :key="t.id">
+                           <img 
+                             v-if="t.id === item.transfer_id && t.proof_image"
+                             :src="t.proof_image.startsWith('http') ? t.proof_image : `http://localhost:3000/${t.proof_image}`" 
+                             class="w-8 h-8 object-cover rounded border border-purple-200 mx-auto cursor-pointer hover:scale-110 transition-transform"
+                             @click.stop="viewImage(t.proof_image.startsWith('http') ? t.proof_image : `http://localhost:3000/${t.proof_image}`)"
+                             title="Bukti Transfer"
+                           />
+                         </div>
+                       </div>
+                       <span v-else class="text-[10px] text-slate-300">-</span>
+                    </td>
+                    <td class="px-4 py-3 text-center">
                        <img 
                          v-if="item.bukti_foto"
                          :src="item.bukti_foto.startsWith('http') ? item.bukti_foto : `http://localhost:3000/${item.bukti_foto}`" 
                          class="w-8 h-8 object-cover rounded border border-slate-200 mx-auto cursor-pointer hover:scale-110 transition-transform"
                          @click.stop="viewImage(item.bukti_foto.startsWith('http') ? item.bukti_foto : `http://localhost:3000/${item.bukti_foto}`)"
-                         title="Lihat Bukti"
+                         title="Lihat Bukti Belanja"
                        />
                        <span v-else class="text-[10px] text-slate-300">-</span>
                     </td>

@@ -248,6 +248,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAutoRefresh } from '../../composables/useAutoRefresh';
 
 import api from '../../services/api';
 
@@ -265,6 +266,9 @@ const isHistory = computed(() => router.currentRoute.value.query.tab === 'histor
 onMounted(() => {
   loadPOData();
 });
+
+// Auto-refresh disabled to prevent input reset
+// useAutoRefresh(loadPOData);
 
 watch(() => router.currentRoute.value.query.tab, () => {
   loadPOData();

@@ -95,6 +95,7 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/auth';
+import { useAutoRefresh } from '../../composables/useAutoRefresh';
 import type { PurchaseOrder } from '../../types';
 
 const authStore = useAuthStore();
@@ -105,6 +106,9 @@ const loading = ref(false);
 onMounted(async () => {
   await loadPOs();
 });
+
+// Auto-refresh disabled
+// useAutoRefresh(loadPOs);
 
 async function loadPOs() {
   loading.value = true;

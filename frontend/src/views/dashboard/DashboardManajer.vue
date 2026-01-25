@@ -106,6 +106,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
+import { useAutoRefresh } from '../../composables/useAutoRefresh';
 import api from '../../services/api';
 import DailyPOChart from '../../components/DailyPOChart.vue';
 import { 
@@ -130,6 +131,9 @@ const dailyStats = ref<{ date: string; count: number }[]>([]);
 onMounted(async () => {
   await fetchData();
 });
+
+// Auto-refresh automatically
+useAutoRefresh(fetchData);
 
 async function fetchData() {
   loading.value = true;

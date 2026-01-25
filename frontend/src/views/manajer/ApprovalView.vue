@@ -2,6 +2,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAutoRefresh } from '../../composables/useAutoRefresh';
 
 import api from '../../services/api';
 import { 
@@ -26,6 +27,9 @@ const currentImageUrl = ref('');
 onMounted(() => {
   loadPOData();
 });
+
+// Auto-refresh disabled due to interference with user input
+// useAutoRefresh(loadPOData);
 
 // Watch for route changes to reload data
 watch(() => router.currentRoute.value.query.tab, () => {
@@ -187,7 +191,10 @@ function getStatusLabel(status: string) {
     return status.replace('_', ' ');
 }
 
-
+function viewImage(url: string) {
+  currentImageUrl.value = url;
+  showImageViewer.value = true;
+}
 
 function closeImageViewer() {
   showImageViewer.value = false;
@@ -275,6 +282,16 @@ function closeImageViewer() {
                         <Package class="w-3 h-3" />
                         {{ po.items?.length || 0 }} Items
                      </span>
+                     
+                     <!-- New: Transfer Proof Button -->
+                     <button 
+                       v-if="po.transfers && po.transfers.length > 0 && po.transfers[0].proof_image"
+                       @click.stop="viewImage(po.transfers[0].proof_image.startsWith('http') ? po.transfers[0].proof_image : `http://localhost:3000/${po.transfers[0].proof_image}`)"
+                       class="flex items-center gap-1 text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-100 hover:bg-purple-100 transition-colors"
+                     >
+                       <FileText class="w-3 h-3" />
+                       Lihat Transfer
+                     </button>
                    </div>
                 </div>
               </div>
@@ -311,6 +328,8 @@ function closeImageViewer() {
                     <th class="px-4 py-3 text-right">Harga Est.</th>
                     <th class="px-4 py-3 text-right w-[25%] bg-indigo-50/30 text-indigo-900 border-l border-indigo-100">Harga Approved</th>
                     <th class="px-4 py-3 text-right font-bold text-emerald-700">Subtotal</th>
+                    <th class="px-4 py-3 text-center w-10">Transfer</th>
+                    <th class="px-4 py-3 text-center w-10">Belanja</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -343,6 +362,30 @@ function closeImageViewer() {
                     </td>
                     <td class="px-4 py-3 text-right font-bold text-emerald-600">
                       Rp {{ formatCurrency(isHistory ? (item.subtotal_approved || 0) : getApprovedSubtotal(item)) }}
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                       <div v-if="item.transfer_id && po.transfers">
+                         <div v-for="t in po.transfers" :key="t.id">
+                           <img 
+                             v-if="t.id === item.transfer_id && t.proof_image"
+                             :src="t.proof_image.startsWith('http') ? t.proof_image : `http://localhost:3000/${t.proof_image}`" 
+                             class="w-6 h-6 object-cover rounded border border-purple-200 mx-auto cursor-pointer hover:scale-150 transition-transform"
+                             @click.stop="viewImage(t.proof_image.startsWith('http') ? t.proof_image : `http://localhost:3000/${t.proof_image}`)"
+                             title="Bukti Transfer"
+                           />
+                         </div>
+                       </div>
+                       <span v-else class="text-[10px] text-slate-300">-</span>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                       <img 
+                         v-if="item.bukti_foto"
+                         :src="item.bukti_foto.startsWith('http') ? item.bukti_foto : `http://localhost:3000/${item.bukti_foto}`" 
+                         class="w-6 h-6 object-cover rounded border border-slate-200 mx-auto cursor-pointer hover:scale-150 transition-transform"
+                         @click.stop="viewImage(item.bukti_foto.startsWith('http') ? item.bukti_foto : `http://localhost:3000/${item.bukti_foto}`)"
+                         title="Bukti Belanja"
+                       />
+                       <span v-else class="text-[10px] text-slate-300">-</span>
                     </td>
                   </tr>
                 </tbody>

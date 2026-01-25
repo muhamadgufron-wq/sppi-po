@@ -32,6 +32,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
+// import { useAutoRefresh } from '../../composables/useAutoRefresh'; // Not needed for static dashboard
 
 const router = useRouter();
 const authStore = useAuthStore();

@@ -164,6 +164,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
+import { useAutoRefresh } from '../../composables/useAutoRefresh';
 import api from '../../services/api';
 import DailyPOChart from '../../components/DailyPOChart.vue';
 import { 
@@ -189,6 +190,9 @@ onMounted(async () => {
   // Always fetch data for specific dashboard
   await fetchData();
 });
+
+// Auto-refresh every 30 seconds
+useAutoRefresh(fetchData);
 
 async function fetchData() {
   loading.value = true;

@@ -320,17 +320,41 @@ function triggerItemFileInput(itemId: number) {
   }
 }
 
-function handleItemFileSelect(event: Event, item: any) {
+import imageCompression from 'browser-image-compression';
+
+async function handleItemFileSelect(event: Event, item: any) {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
   
   if (file) {
-    item.proofFile = file;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      item.previewUrl = e.target?.result;
-    };
-    reader.readAsDataURL(file);
+    try {
+      // Show loading indicator on item? For now just log
+      console.log(`Compressing ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)...`);
+      
+      const options = {
+        maxSizeMB: 0.5, // Max 500KB
+        maxWidthOrHeight: 1280, // Max width/height
+        useWebWorker: true
+      };
+
+      const compressedFile = await imageCompression(file, options);
+      console.log(`Compressed to ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
+      
+      // Convert Blob/File to File object with original name if needed (browser-image-compression returns File/Blob)
+      // It returns a Blob that acts like a File in most cases.
+      item.proofFile = compressedFile;
+
+      // Preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        item.previewUrl = e.target?.result;
+      };
+      reader.readAsDataURL(compressedFile);
+
+    } catch (error) {
+      console.error('Compression failed:', error);
+      alert('Gagal mengompres gambar. Silakan coba lagi.');
+    }
   }
 }
 

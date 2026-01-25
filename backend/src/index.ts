@@ -20,7 +20,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors({
-  origin: '*', // Allow all origins (since Frontend URL might vary in Vercel previews)
+  origin: true, // Reflect request origin to support credentials
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true

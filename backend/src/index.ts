@@ -25,6 +25,14 @@ const corsOptions = {
   optionsSuccessStatus: 200
 };
 
+// Debug Middleware
+app.use((req, res, next) => {
+  console.log(`[DEBUG] ${req.method} ${req.url}`);
+  // Log headers for debugging CORS
+  console.log('[DEBUG] Headers:', req.headers);
+  next();
+});
+
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 app.use(express.json());
@@ -44,6 +52,11 @@ if (!fs.existsSync(uploadDir)) {
 
 // Serve uploaded files
 app.use('/uploads', express.static(uploadDir));
+
+// Root debug route
+app.get('/', (req, res) => {
+  res.json({ message: 'SPPI Backend is running', env: process.env.NODE_ENV, url: req.url });
+});
 
 // Routes
 app.use('/api/auth', authRoutes);

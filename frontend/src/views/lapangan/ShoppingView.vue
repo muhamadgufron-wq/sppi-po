@@ -248,7 +248,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAutoRefresh } from '../../composables/useAutoRefresh';
 
 import api from '../../services/api';
 

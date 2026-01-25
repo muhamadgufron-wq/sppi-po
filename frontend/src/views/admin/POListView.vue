@@ -95,7 +95,6 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/auth';
-import { useAutoRefresh } from '../../composables/useAutoRefresh';
 import type { PurchaseOrder } from '../../types';
 
 const authStore = useAuthStore();

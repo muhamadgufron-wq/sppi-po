@@ -421,9 +421,9 @@ function closeImageViewer() {
                     <td class="px-4 py-3 text-center">
                        <img 
                          v-if="item.bukti_foto"
-                         :src="`http://localhost:3000/${item.bukti_foto}`" 
+                         :src="item.bukti_foto.startsWith('http') ? item.bukti_foto : `http://localhost:3000/${item.bukti_foto}`" 
                          class="w-8 h-8 object-cover rounded border border-slate-200 mx-auto cursor-pointer hover:scale-110 transition-transform"
-                         @click.stop="viewImage(`http://localhost:3000/${item.bukti_foto}`)"
+                         @click.stop="viewImage(item.bukti_foto.startsWith('http') ? item.bukti_foto : `http://localhost:3000/${item.bukti_foto}`)"
                          title="Lihat Bukti"
                        />
                        <span v-else class="text-[10px] text-slate-300">-</span>

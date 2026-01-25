@@ -167,9 +167,9 @@
                         <div v-else>
                           <img 
                              v-if="item.bukti_foto"
-                             :src="`http://localhost:3000/${item.bukti_foto}`" 
+                             :src="item.bukti_foto.startsWith('http') ? item.bukti_foto : `http://localhost:3000/${item.bukti_foto}`" 
                              class="w-10 h-10 object-cover rounded-lg border border-slate-200 mx-auto cursor-zoom-in hover:scale-110 transition-transform"
-                             @click="viewImage(`http://localhost:3000/${item.bukti_foto}`)"
+                             @click="viewImage(item.bukti_foto.startsWith('http') ? item.bukti_foto : `http://localhost:3000/${item.bukti_foto}`)"
                            />
                            <span v-else class="text-[10px] text-slate-400 italic">No Foto</span>
                         </div>

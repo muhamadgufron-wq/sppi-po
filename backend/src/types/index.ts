@@ -12,7 +12,7 @@ export interface User {
   id: number;
   username: string;
   email: string;
-  password: string;
+  password_hash: string;
   role: UserRole;
   nama_lengkap: string;
   is_active: boolean;

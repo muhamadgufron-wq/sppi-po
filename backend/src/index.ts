@@ -31,9 +31,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Create uploads directory if not exists
-const uploadDir = process.env.UPLOAD_DIR || './uploads';
+// Create uploads directory if not exists
+const uploadDir = process.env.VERCEL ? '/tmp/uploads' : (process.env.UPLOAD_DIR || './uploads');
+
 if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+  try {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  } catch (err) {
+    console.warn('Failed to create upload directory (likely read-only fs):', err);
+  }
 }
 
 // Serve uploaded files

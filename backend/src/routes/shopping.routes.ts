@@ -284,20 +284,24 @@ router.post('/:poId/complete', authenticateToken, authorizeRoles(UserRole.LAPANG
     console.log('All images uploaded.');
 
     // 2. Update DB in transaction (Fast)
+    // Fetch all original items once to avoid N queries in loop
+    const originalItems = await query<any[]>(
+      'SELECT id, qty_estimasi FROM po_items WHERE po_id = ?',
+      [poId]
+    );
+    const itemsMap = new Map(originalItems.map(i => [i.id, i]));
+    
     let totalReal = 0;
     
     await transaction(async (conn) => {
       for (const itemData of processedItems) {
         const { item_id, harga_real, bukti_foto } = itemData;
 
-        // Get item to calculate subtotal
-        const [item]: any = await conn.execute(
-          'SELECT qty_estimasi FROM po_items WHERE id = ? AND po_id = ?',
-          [item_id, poId]
-        );
+        // Get item from Map (No DB query needed)
+        const item = itemsMap.get(item_id);
 
-        if (item && item.length > 0) {
-          const qty = parseFloat(item[0].qty_estimasi);
+        if (item) {
+          const qty = parseFloat(item.qty_estimasi);
           const harga = parseFloat(harga_real);
           const subtotal_real = qty * harga;
           totalReal += subtotal_real;

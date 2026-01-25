@@ -256,22 +256,39 @@ router.post('/:poId/complete', authenticateToken, authorizeRoles(UserRole.LAPANG
 
     console.log('Updating items and PO...');
 
-    // Update items and calculate total
+    // 1. Upload images in PARALLEL to avoid Vercel timeouts
+    console.log('Starting parallel image uploads...');
+    const processedItems = await Promise.all(pricesArray.map(async (priceData: any) => {
+      const { item_id, harga_real } = priceData;
+      
+      // Find uploaded file for this item
+      const proofFile = files.find(f => f.fieldname === `proof_item_${item_id}`);
+      let bukti_foto = null;
+
+      if (proofFile) {
+          try {
+            // Upload to Cloudinary
+            bukti_foto = await uploadToCloudinary(proofFile.buffer, 'po_item_proofs');
+          } catch (err) {
+            console.error(`Failed to upload image for item ${item_id}:`, err);
+            // Optionally throw error or continue without image
+            // throw err; 
+          }
+      }
+      
+      return {
+        ...priceData,
+        bukti_foto
+      };
+    }));
+    console.log('All images uploaded.');
+
+    // 2. Update DB in transaction (Fast)
     let totalReal = 0;
     
     await transaction(async (conn) => {
-      for (const priceData of pricesArray) {
-        const { item_id, harga_real } = priceData;
-        
-        // Find uploaded file for this item
-        // Frontend should append file with key 'proof_item_{itemId}'
-        const proofFile = files.find(f => f.fieldname === `proof_item_${item_id}`);
-        let bukti_foto = null;
-
-        if (proofFile) {
-            // Upload to Cloudinary
-            bukti_foto = await uploadToCloudinary(proofFile.buffer, 'po_item_proofs');
-        }
+      for (const itemData of processedItems) {
+        const { item_id, harga_real, bukti_foto } = itemData;
 
         // Get item to calculate subtotal
         const [item]: any = await conn.execute(
@@ -286,7 +303,6 @@ router.post('/:poId/complete', authenticateToken, authorizeRoles(UserRole.LAPANG
           totalReal += subtotal_real;
 
           // Update item with real prices and proof
-          // Set qty_real = qty_estimasi by default as we don't have separate input for it here
           let query = `UPDATE po_items SET harga_real = ?, qty_real = ?`;
           const params: any[] = [harga, qty];
 

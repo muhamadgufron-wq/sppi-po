@@ -282,15 +282,31 @@ function closeImageViewer() {
                         {{ po.items?.length || 0 }} Items
                      </span>
                      
-                     <!-- New: Transfer Proof Button -->
-                     <button 
-                       v-if="po.transfers && po.transfers.length > 0 && po.transfers[0].proof_image"
-                       @click.stop="viewImage(po.transfers[0].proof_image.startsWith('http') ? po.transfers[0].proof_image : `http://localhost:3000/${po.transfers[0].proof_image}`)"
-                       class="flex items-center gap-1 text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-100 hover:bg-purple-100 transition-colors"
-                     >
-                       <FileText class="w-3 h-3" />
-                       Lihat Transfer
-                     </button>
+                     
+                     <!-- New: Proof Thumbnails (Transfer & Shopping) -->
+                     <div class="flex items-center gap-2 mt-1">
+                       
+                       <!-- 1. Transfer Proof Thumbnail -->
+                       <div v-if="po.transfers && po.transfers.length > 0 && po.transfers[0].proof_image" class="relative group" title="Bukti Transfer">
+                          <div class="text-[9px] font-bold text-slate-400 mb-0.5">Transfer</div>
+                          <img 
+                            :src="po.transfers[0].proof_image.startsWith('http') ? po.transfers[0].proof_image : `http://localhost:3000/${po.transfers[0].proof_image}`"
+                            class="w-12 h-12 object-cover rounded-lg border border-purple-200 cursor-pointer hover:scale-110 transition-transform shadow-sm"
+                            @click.stop="viewImage(po.transfers[0].proof_image.startsWith('http') ? po.transfers[0].proof_image : `http://localhost:3000/${po.transfers[0].proof_image}`)"
+                          />
+                       </div>
+
+                       <!-- 2. Shopping Proof Thumbnail (First Item) -->
+                       <div v-if="po.items && po.items.some((i: any) => i.bukti_foto)" class="relative group" title="Bukti Belanja">
+                          <div class="text-[9px] font-bold text-slate-400 mb-0.5">Belanja</div>
+                          <img 
+                            :src="po.items.find((i: any) => i.bukti_foto).bukti_foto.startsWith('http') ? po.items.find((i: any) => i.bukti_foto).bukti_foto : `http://localhost:3000/${po.items.find((i: any) => i.bukti_foto).bukti_foto}`"
+                            class="w-12 h-12 object-cover rounded-lg border border-emerald-200 cursor-pointer hover:scale-110 transition-transform shadow-sm"
+                            @click.stop="viewImage(po.items.find((i: any) => i.bukti_foto).bukti_foto.startsWith('http') ? po.items.find((i: any) => i.bukti_foto).bukti_foto : `http://localhost:3000/${po.items.find((i: any) => i.bukti_foto).bukti_foto}`)"
+                          />
+                       </div>
+
+                     </div>
                    </div>
                 </div>
               </div>
@@ -327,8 +343,6 @@ function closeImageViewer() {
                     <th class="px-4 py-3 text-right">Harga Est.</th>
                     <th class="px-4 py-3 text-right w-[25%] bg-indigo-50/30 text-indigo-900 border-l border-indigo-100">Harga Approved</th>
                     <th class="px-4 py-3 text-right font-bold text-emerald-700">Subtotal</th>
-                    <th class="px-4 py-3 text-center w-10">Transfer</th>
-                    <th class="px-4 py-3 text-center w-10">Belanja</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -361,30 +375,6 @@ function closeImageViewer() {
                     </td>
                     <td class="px-4 py-3 text-right font-bold text-emerald-600">
                       Rp {{ formatCurrency(isHistory ? (item.subtotal_approved || 0) : getApprovedSubtotal(item)) }}
-                    </td>
-                    <td class="px-4 py-3 text-center">
-                       <div v-if="item.transfer_id && po.transfers">
-                         <div v-for="t in po.transfers" :key="t.id">
-                           <img 
-                             v-if="t.id === item.transfer_id && t.proof_image"
-                             :src="t.proof_image.startsWith('http') ? t.proof_image : `http://localhost:3000/${t.proof_image}`" 
-                             class="w-6 h-6 object-cover rounded border border-purple-200 mx-auto cursor-pointer hover:scale-150 transition-transform"
-                             @click.stop="viewImage(t.proof_image.startsWith('http') ? t.proof_image : `http://localhost:3000/${t.proof_image}`)"
-                             title="Bukti Transfer"
-                           />
-                         </div>
-                       </div>
-                       <span v-else class="text-[10px] text-slate-300">-</span>
-                    </td>
-                    <td class="px-4 py-3 text-center">
-                       <img 
-                         v-if="item.bukti_foto"
-                         :src="item.bukti_foto.startsWith('http') ? item.bukti_foto : `http://localhost:3000/${item.bukti_foto}`" 
-                         class="w-6 h-6 object-cover rounded border border-slate-200 mx-auto cursor-pointer hover:scale-150 transition-transform"
-                         @click.stop="viewImage(item.bukti_foto.startsWith('http') ? item.bukti_foto : `http://localhost:3000/${item.bukti_foto}`)"
-                         title="Bukti Belanja"
-                       />
-                       <span v-else class="text-[10px] text-slate-300">-</span>
                     </td>
                   </tr>
                 </tbody>

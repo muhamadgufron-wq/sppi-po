@@ -190,11 +190,6 @@ function getStatusLabel(status: string) {
     return status.replace('_', ' ');
 }
 
-function viewImage(url: string) {
-  currentImageUrl.value = url;
-  showImageViewer.value = true;
-}
-
 function closeImageViewer() {
   showImageViewer.value = false;
 }
@@ -281,32 +276,6 @@ function closeImageViewer() {
                         <Package class="w-3 h-3" />
                         {{ po.items?.length || 0 }} Items
                      </span>
-                     
-                     
-                     <!-- New: Proof Thumbnails (Transfer & Shopping) -->
-                     <div class="flex items-center gap-2 mt-1">
-                       
-                       <!-- 1. Transfer Proof Thumbnail -->
-                       <div v-if="po.transfers && po.transfers.length > 0 && po.transfers[0].proof_image" class="relative group" title="Bukti Transfer">
-                          <div class="text-[9px] font-bold text-slate-400 mb-0.5">Transfer</div>
-                          <img 
-                            :src="po.transfers[0].proof_image.startsWith('http') ? po.transfers[0].proof_image : `http://localhost:3000/${po.transfers[0].proof_image}`"
-                            class="w-12 h-12 object-cover rounded-lg border border-purple-200 cursor-pointer hover:scale-110 transition-transform shadow-sm"
-                            @click.stop="viewImage(po.transfers[0].proof_image.startsWith('http') ? po.transfers[0].proof_image : `http://localhost:3000/${po.transfers[0].proof_image}`)"
-                          />
-                       </div>
-
-                       <!-- 2. Shopping Proof Thumbnail (First Item) -->
-                       <div v-if="po.items && po.items.some((i: any) => i.bukti_foto)" class="relative group" title="Bukti Belanja">
-                          <div class="text-[9px] font-bold text-slate-400 mb-0.5">Belanja</div>
-                          <img 
-                            :src="po.items.find((i: any) => i.bukti_foto).bukti_foto.startsWith('http') ? po.items.find((i: any) => i.bukti_foto).bukti_foto : `http://localhost:3000/${po.items.find((i: any) => i.bukti_foto).bukti_foto}`"
-                            class="w-12 h-12 object-cover rounded-lg border border-emerald-200 cursor-pointer hover:scale-110 transition-transform shadow-sm"
-                            @click.stop="viewImage(po.items.find((i: any) => i.bukti_foto).bukti_foto.startsWith('http') ? po.items.find((i: any) => i.bukti_foto).bukti_foto : `http://localhost:3000/${po.items.find((i: any) => i.bukti_foto).bukti_foto}`)"
-                          />
-                       </div>
-
-                     </div>
                    </div>
                 </div>
               </div>

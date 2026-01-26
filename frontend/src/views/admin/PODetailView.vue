@@ -215,10 +215,10 @@ function viewImage(url: string) {
 }
 
 function viewTransferProof() {
-  if (po.value?.transfer?.bukti_transfer_path) {
-    currentImageUrl.value = po.value.transfer.bukti_transfer_path.startsWith('http') 
-      ? po.value.transfer.bukti_transfer_path 
-      : `http://localhost:3000/${po.value.transfer.bukti_transfer_path}`;
+  if (po.value?.transfer?.proof_image) {
+    currentImageUrl.value = po.value.transfer.proof_image.startsWith('http') 
+      ? po.value.transfer.proof_image 
+      : `http://localhost:3000/${po.value.transfer.proof_image}`;
     currentImageIndex.value = 0;
     totalImages.value = 1;
     imageType.value = 'transfer';
@@ -385,15 +385,16 @@ function getDeviationClass(real: number, approved: number) {
                 <tr class="bg-slate-50/80">
                   <th class="p-3 text-left font-bold text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-200">Barang</th>
                   <th class="p-3 text-right font-bold text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-200">Qty</th>
-                  <th class="p-3 text-left font-bold text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-200">Satuan</th>
-                  <th class="p-3 text-right font-bold text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-200">Harga Est.</th>
-                  <th v-if="showApprovedPrices" class="p-3 text-right font-bold text-[11px] text-emerald-600 uppercase tracking-wider border-b border-emerald-100 bg-emerald-50/30">Harga App.</th>
-                  <th v-if="showRealPrices" class="p-3 text-right font-bold text-[11px] text-sky-600 uppercase tracking-wider border-b border-sky-100 bg-sky-50/30">Harga Real</th>
+                  <th class="p-3 text-left font-bold text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-200">Sat</th>
+                  <th class="p-3 text-right font-bold text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-200">H. Est</th>
+                  <th v-if="showApprovedPrices" class="p-3 text-right font-bold text-[11px] text-emerald-600 uppercase tracking-wider border-b border-emerald-100 bg-emerald-50/30">H. App</th>
+                  <th v-if="showRealPrices" class="p-3 text-right font-bold text-[11px] text-sky-600 uppercase tracking-wider border-b border-sky-100 bg-sky-50/30">H. Real</th>
                   <th class="p-3 text-right font-bold text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-200">Subtotal</th>
-                  <th v-if="showApprovedPrices" class="p-3 text-right font-bold text-[11px] text-emerald-600 uppercase tracking-wider border-b border-emerald-100 bg-emerald-50/30">Subtotal App.</th>
-                  <th v-if="showRealPrices" class="p-3 text-right font-bold text-[11px] text-sky-600 uppercase tracking-wider border-b border-sky-100 bg-sky-50/30">Subtotal Real</th>
+                  <th v-if="showApprovedPrices" class="p-3 text-right font-bold text-[11px] text-emerald-600 uppercase tracking-wider border-b border-emerald-100 bg-emerald-50/30">Sub. App</th>
+                  <th v-if="showRealPrices" class="p-3 text-right font-bold text-[11px] text-sky-600 uppercase tracking-wider border-b border-sky-100 bg-sky-50/30">Sub. Real</th>
                   <th v-if="showRealPrices" class="p-3 text-right font-bold text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-200">Deviasi</th>
-                  <th v-if="showRealPrices" class="p-3 text-center font-bold text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-200">Bukti</th>
+                  <th v-if="showRealPrices" class="p-3 text-center font-bold text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-200 w-16">TF</th>
+                  <th v-if="showRealPrices" class="p-3 text-center font-bold text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-200 w-16">BB</th>
                 </tr>
               </thead>
               <tbody>
@@ -422,12 +423,26 @@ function getDeviationClass(real: number, approved: number) {
                     {{ formatDeviation((item.qty_estimasi || 0) * (item.harga_real || 0), item.subtotal_approved || ((item.qty_estimasi || 0) * (item.harga_approved || 0))) }}
                   </td>
                   <td v-if="showRealPrices" class="p-3 text-center">
+                       <div v-if="item.transfer_id && po.transfers">
+                         <div v-for="t in po.transfers" :key="t.id">
+                           <img 
+                             v-if="t.id === item.transfer_id && t.proof_image"
+                             :src="t.proof_image.startsWith('http') ? t.proof_image : `http://localhost:3000/${t.proof_image}`" 
+                             class="w-8 h-8 object-cover rounded border border-purple-200 mx-auto cursor-pointer hover:scale-110 transition-transform"
+                             @click.stop="viewImage(t.proof_image.startsWith('http') ? t.proof_image : `http://localhost:3000/${t.proof_image}`)"
+                             title="Bukti Transfer"
+                           />
+                         </div>
+                       </div>
+                       <span v-else class="text-[10px] text-slate-300">-</span>
+                  </td>
+                  <td v-if="showRealPrices" class="p-3 text-center">
                        <img 
                          v-if="item.bukti_foto"
                          :src="item.bukti_foto.startsWith('http') ? item.bukti_foto : `http://localhost:3000/${item.bukti_foto}`" 
                          class="w-8 h-8 object-cover rounded border border-slate-200 mx-auto cursor-pointer hover:scale-110 transition-transform"
                          @click.stop="viewImage(item.bukti_foto.startsWith('http') ? item.bukti_foto : `http://localhost:3000/${item.bukti_foto}`)"
-                         title="Lihat Bukti"
+                         title="Lihat Bukti Belanja"
                        />
                      <span v-else class="text-[10px] text-slate-300">-</span>
                   </td>
@@ -448,7 +463,7 @@ function getDeviationClass(real: number, approved: number) {
                    <td v-if="showRealPrices" class="p-4 text-xs font-bold text-right" :class="getDeviationClass(po.total_real || 0, po.total_approved || 0)">
                     {{ formatDeviation(po.total_real || 0, po.total_approved || 0) }}
                   </td>
-                  <td v-if="showRealPrices" class="bg-slate-50 border-t border-slate-200"></td>
+                  <td v-if="showRealPrices" class="bg-slate-50 border-t border-slate-200" colspan="2"></td>
                 </tr>
               </tfoot>
             </table>
@@ -463,17 +478,13 @@ function getDeviationClass(real: number, approved: number) {
         <div class="flex flex-col gap-3 text-sm">
           <div class="flex justify-between py-1 border-b border-slate-50">
             <span class="text-slate-500">Nominal</span>
-             <span class="font-bold text-purple-700">Rp {{ formatCurrency(po.transfer.nominal_transfer) }}</span>
+             <span class="font-bold text-purple-700">Rp {{ formatCurrency(po.transfer.amount) }}</span>
           </div>
           <div class="flex justify-between py-1 border-b border-slate-50">
             <span class="text-slate-500">Tanggal</span>
-            <span class="font-medium text-slate-900">{{ formatDate(po.transfer.tanggal_transfer) }}</span>
+            <span class="font-medium text-slate-900">{{ formatDate(po.transfer.transfer_date) }}</span>
           </div>
-           <div class="flex justify-between py-1 border-b border-slate-50">
-            <span class="text-slate-500">Bank Tujuan</span>
-            <span class="font-medium text-slate-900">{{ po.transfer.nomor_rekening_tujuan || '-' }}</span>
-          </div>
-          <button v-if="po.transfer.bukti_transfer_path" @click="viewTransferProof" class="mt-2 w-full py-2 bg-purple-50 text-purple-700 rounded-lg text-xs font-bold hover:bg-purple-100 transition-colors border border-purple-100 flex items-center justify-center gap-2">
+          <button v-if="po.transfer.proof_image" @click="viewTransferProof" class="mt-2 w-full py-2 bg-purple-50 text-purple-700 rounded-lg text-xs font-bold hover:bg-purple-100 transition-colors border border-purple-100 flex items-center justify-center gap-2">
             <span>📄</span> Lihat Bukti Transfer
           </button>
         </div>

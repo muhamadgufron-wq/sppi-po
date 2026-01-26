@@ -213,7 +213,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     console.log('📥 GET /api/po - User:', req.user?.id, req.user?.username, req.user?.role);
     
-    const { status, page = 1, limit = 10 } = req.query;
+    const { status, search, page = 1, limit = 10 } = req.query;
     const userId = req.user!.id;
     const userRole = req.user!.role;
     
@@ -229,6 +229,12 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       WHERE 1=1
     `;
     const params: any[] = [];
+
+    // Search filter
+    if (search) {
+      sql += ' AND po.po_number LIKE ?';
+      params.push(`%${search}%`);
+    }
 
     // Add status filter if provided
     if (status) {
@@ -314,16 +320,15 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
     );
 
     // Get transfer details if exists
-    let transfer = null;
-    if (po.status === 'DANA_DITRANSFER' || po.status === 'BELANJA_SELESAI' || po.status === 'CLOSED') {
-      transfer = await queryOne(
-        `SELECT t.*, u.nama_lengkap as transferred_by_name
-         FROM transfers t
-         LEFT JOIN users u ON t.transferred_by = u.id
-         WHERE t.po_id = ?`,
-        [id]
-      );
-    }
+    // Get transfer details
+    const transfers = await query<any[]>(
+      `SELECT t.*, u.nama_lengkap as created_by_name
+       FROM po_transfers t
+       LEFT JOIN users u ON t.created_by = u.id
+       WHERE t.po_id = ?
+       ORDER BY t.created_at DESC`,
+      [id]
+    );
 
     // Parse bukti_belanja if exists
     let buktiBelanja = null;
@@ -340,7 +345,8 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
       data: {
         ...po,
         items,
-        transfer,
+        transfers, // Return array
+        transfer: transfers[0] || null, // Keep singular for backward compatibility if any
         bukti_belanja_parsed: buktiBelanja
       }
     });

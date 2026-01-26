@@ -84,19 +84,23 @@ export interface POItem {
   subtotal_real?: number;
   selisih_persen?: number;
   bukti_foto?: string;
+  transfer_id?: number; // Added
 }
 
 export interface Transfer {
   id: number;
   po_id: number;
-  nominal_transfer: number;
-  tanggal_transfer: string;
-  metode_transfer?: string;
-  nomor_rekening_tujuan?: string;
+  amount: number; // DB column
+  transfer_date: string; // DB column
+  notes?: string;
+  proof_image?: string; // DB column
+  created_by: number;
+  created_by_name?: string;
+  
+  // Legacy/Frontend alias (optional)
+  nominal_transfer?: number;
+  tanggal_transfer?: string;
   bukti_transfer_path?: string;
-  transferred_by: number;
-  transferred_by_name?: string;
-  created_at: string;
 }
 
 export interface ShoppingProof {
@@ -107,6 +111,7 @@ export interface ShoppingProof {
 
 export interface POWithItems extends PurchaseOrder {
   items: POItem[];
+  transfers?: Transfer[]; // Added
   transfer?: Transfer | null;
   bukti_belanja_parsed?: ShoppingProof[] | null;
 }

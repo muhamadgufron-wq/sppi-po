@@ -6,9 +6,28 @@
         <h1 class="m-0 text-2xl md:text-3xl font-bold text-slate-800 tracking-tight">Daftar Purchase Orders</h1>
         <p class="m-0 mt-1 text-slate-500 font-medium">Kelola dan pantau status pengajuan PO.</p>
       </div>
-      <router-link v-if="authStore.userRole === 'ADMIN'" to="/po/create" class="flex items-center justify-center gap-2 py-3 px-6 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 no-underline">
-        <span class="text-xl leading-none">+</span> Buat PO Baru
-      </router-link>
+      <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+        <!-- Search Bar -->
+        <div class="relative group w-full md:w-72">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-colors group-focus-within:text-emerald-600 text-slate-400">
+            <Search class="w-5 h-5" />
+          </div>
+          <input 
+            v-model="searchQuery" 
+            @input="handleSearch"
+            type="text" 
+            placeholder="Cari Nomor PO..." 
+            class="block w-full pl-10 pr-10 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all shadow-sm group-hover:border-emerald-300"
+          >
+          <div v-if="searchQuery" class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-slate-400 hover:text-red-500 transition-colors" @click="clearSearch">
+            <XCircle class="w-5 h-5" />
+          </div>
+        </div>
+
+        <router-link v-if="authStore.userRole === 'ADMIN'" to="/po/create" class="flex items-center justify-center gap-2 py-3 px-6 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 hover:-translate-y-0.5 active:translate-y-0 no-underline whitespace-nowrap">
+          <span class="text-xl leading-none font-light">+</span> <span>Buat PO</span>
+        </router-link>
+      </div>
     </div>
 
     <!-- Loading State -->
@@ -19,10 +38,14 @@
 
     <!-- Empty State -->
     <div v-else-if="pos.length === 0" class="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-300">
-      <div class="text-5xl mb-4">📝</div>
-      <h3 class="text-lg font-bold text-slate-800 mb-2">Belum ada Purchase Order</h3>
-      <p class="text-slate-500 max-w-md mx-auto mb-6">Mulai buat pengajuan PO baru untuk supplier sayuran.</p>
-      <router-link v-if="authStore.userRole === 'ADMIN'" to="/po/create" class="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 text-emerald-700 font-bold rounded-xl hover:bg-emerald-100 transition-colors no-underline">
+      <div v-if="searchQuery" class="mb-4 text-4xl">🔍</div>
+      <div v-else class="text-5xl mb-4">📝</div>
+      <h3 class="text-lg font-bold text-slate-800 mb-2">{{ searchQuery ? 'Tidak ditemukan' : 'Belum ada Purchase Order' }}</h3>
+      <p class="text-slate-500 max-w-md mx-auto mb-6">{{ searchQuery ? `Tidak ada PO dengan nomor "${searchQuery}"` : 'Mulai buat pengajuan PO baru untuk supplier sayuran.' }}</p>
+      <button v-if="searchQuery" @click="clearSearch" class="inline-flex items-center gap-2 px-6 py-2.5 bg-slate-50 text-slate-700 font-bold rounded-xl hover:bg-slate-100 transition-colors">
+        Reset Pencarian
+      </button>
+      <router-link v-else-if="authStore.userRole === 'ADMIN'" to="/po/create" class="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 text-emerald-700 font-bold rounded-xl hover:bg-emerald-100 transition-colors no-underline">
         Buat PO Sekarang
       </router-link>
     </div>
@@ -38,7 +61,9 @@
               📄
             </div>
             <div>
-              <h3 class="m-0 text-sm font-bold text-slate-800 tracking-tight group-hover:text-emerald-600 transition-colors">{{ po.po_number }}</h3>
+              <h3 class="m-0 text-sm font-bold text-slate-800 tracking-tight group-hover:text-emerald-600 transition-colors">
+                <span v-html="highlightMatch(po.po_number)"></span>
+              </h3>
               <p class="m-0 text-[10px] text-slate-400 font-medium mt-0.5">{{ formatDate(po.tanggal_po) }}</p>
             </div>
           </div>
@@ -87,12 +112,42 @@
         </div>
       </div>
     </div>
+
+    <!-- Pagination Controls -->
+    <div v-if="totalPages > 1" class="mt-8 flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+      <div class="text-sm text-slate-500 font-medium">
+        Menampilkan <span class="font-bold text-slate-700">{{ pos.length }}</span> dari <span class="font-bold text-slate-700">{{ totalPOs }}</span> data
+      </div>
+      
+      <div class="flex items-center gap-2">
+        <button 
+          @click="prevPage" 
+          :disabled="currentPage === 1"
+          class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          <ChevronLeft class="w-5 h-5" />
+        </button>
+        
+        <div class="px-4 py-2 bg-slate-50 rounded-lg text-sm font-bold text-slate-700 border border-slate-200">
+          Hal. {{ currentPage }} / {{ totalPages }}
+        </div>
+
+        <button 
+          @click="nextPage" 
+          :disabled="currentPage === totalPages"
+          class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          <ChevronRight class="w-5 h-5" />
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { Search, XCircle, ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/auth';
 import type { PurchaseOrder } from '../../types';
@@ -101,25 +156,76 @@ const authStore = useAuthStore();
 const router = useRouter();
 const pos = ref<PurchaseOrder[]>([]);
 const loading = ref(false);
+const searchQuery = ref('');
+const currentPage = ref(1);
+const totalPages = ref(1);
+const limit = 15;
+const totalPOs = ref(0);
+let searchTimeout: any;
 
 onMounted(async () => {
   await loadPOs();
 });
 
-// Auto-refresh disabled
-// useAutoRefresh(loadPOs);
+function handleSearch() {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    currentPage.value = 1; // Reset to page 1 on search
+    loadPOs();
+  }, 300);
+}
+
+function clearSearch() {
+  searchQuery.value = '';
+  currentPage.value = 1;
+  loadPOs();
+}
+
+function highlightMatch(text: string) {
+  if (!searchQuery.value) return text;
+  const regex = new RegExp(`(${searchQuery.value})`, 'gi');
+  return text.replace(regex, '<span class="bg-yellow-200 text-slate-800">$1</span>');
+}
 
 async function loadPOs() {
   loading.value = true;
   try {
-    const response = await api.get('/po');
+    const params: any = {
+      page: currentPage.value,
+      limit: limit
+    };
+    if (searchQuery.value) {
+      params.search = searchQuery.value;
+    }
+    
+    const response = await api.get('/po', { params });
     if (response.data.success) {
       pos.value = response.data.data;
+      if (response.data.pagination) {
+        totalPages.value = response.data.pagination.totalPages;
+        totalPOs.value = response.data.pagination.total;
+      }
     }
   } catch (error) {
     console.error('Failed to load POs:', error);
   } finally {
     loading.value = false;
+  }
+}
+
+function nextPage() {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+    loadPOs();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function prevPage() {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+    loadPOs();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 }
 

@@ -128,7 +128,12 @@ router.post('/:poId/transfer', authenticateToken, authorizeRoles(UserRole.KEUANG
       return res.status(404).json({ success: false, message: 'PO tidak ditemukan' });
     }
 
-    const proofImage = req.file ? req.file.filename : null;
+    let proofImage = null;
+    if (req.file) {
+        // Upload to Cloudinary
+        const { uploadToCloudinary } = await import('../middleware/upload.js');
+        proofImage = await uploadToCloudinary(req.file.buffer, 'sppi_transfers');
+    }
 
     // Start Transaction
     await transaction(async (connection) => {

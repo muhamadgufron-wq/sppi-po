@@ -27,8 +27,18 @@ export async function testConnection() {
     console.log('✅ Database connected successfully');
     connection.release();
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Database connection failed:', error);
+    
+    // Debug: Print config (safely) to help diagnose Vercel issues
+    console.error('DEBUG Connection Config:', {
+      host: dbConfig.host,
+      port: dbConfig.port,
+      user: dbConfig.user,
+      database: dbConfig.database,
+      ssl: !!dbConfig.ssl
+    });
+    
     return false;
   }
 }

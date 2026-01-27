@@ -2,6 +2,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import Swal from 'sweetalert2';
 
 import api from '../../services/api';
 import { 
@@ -113,13 +114,40 @@ function validateApprovedPrices(po: any): boolean {
 
 async function approve(po: any) {
   if (!validateApprovedPrices(po)) {
-    alert('❌ Mohon periksa harga approved');
-    return;
-  }
+    Swal.fire({
+      icon: 'warning',
+      title: 'Harga Invalid',
+      text: 'Mohon periksa harga approved. Pastikan tidak ada yang negatif.',
+      confirmButtonColor: '#f59e0b'
+    });
+  } else {
 
-  if (!confirm(`Approve PO ${po.po_number}?\n\nTotal Approved: Rp ${formatCurrency(getTotalApproved(po))}`)) {
-    return;
-  }
+  const result = await Swal.fire({
+    title: `Approve ${po.po_number}?`,
+    html: `
+      <div class="text-left bg-slate-50 p-4 rounded-lg border border-slate-200 mb-2">
+        <p class="text-sm text-slate-500 mb-1">Total Approved:</p>
+        <p class="text-2xl font-bold text-emerald-600">Rp ${formatCurrency(getTotalApproved(po))}</p>
+      </div>
+      <p class="text-sm text-slate-500">PO akan diteruskan ke bagian Keuangan.</p>
+    `,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#10b981',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: 'Ya, Setujui!',
+    cancelButtonText: 'Batal'
+  });
+
+  if (!result.isConfirmed) return;
+
+  // Loading
+  Swal.fire({
+    title: 'Memproses...',
+    text: 'Menyimpan persetujuan...',
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
 
   try {
     const approved_prices = po.items.map((item: any) => ({
@@ -133,17 +161,57 @@ async function approve(po: any) {
       approved_prices
     });
 
-    alert('✅ PO berhasil disetujui!');
+    await Swal.fire({
+      icon: 'success',
+      title: 'Disetujui!',
+      text: 'PO berhasil disetujui.',
+      confirmButtonColor: '#10b981',
+      timer: 1500,
+      showConfirmButton: false
+    });
+    
     await loadPOData();
   } catch (err: any) {
     console.error('Approve error:', err);
-    alert('❌ ' + (err.response?.data?.message || 'Gagal approve PO'));
+    Swal.fire({
+      icon: 'error',
+      title: 'Gagal',
+      text: err.response?.data?.message || 'Gagal approve PO',
+      confirmButtonColor: '#ef4444'
+    });
+  }
   }
 }
 
 async function reject(po: any) {
-  const catatan = prompt('Alasan penolakan (wajib):');
-  if (!catatan) return;
+  const result = await Swal.fire({
+    title: 'Tolak PO ini?',
+    text: 'Berikan alasan penolakan:',
+    input: 'textarea',
+    inputPlaceholder: 'Tulis alasan di sini...',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: 'Tolak PO',
+    cancelButtonText: 'Batal',
+    inputValidator: (value) => {
+      if (!value) {
+        return 'Alasan penolakan wajib diisi!';
+      }
+    }
+  });
+
+  if (!result.isConfirmed) return;
+  const catatan = result.value;
+
+  // Loading
+  Swal.fire({
+    title: 'Menolak...',
+    text: 'Sedang memproses penolakan...',
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
 
   try {
     await api.post(`/approval/${po.id}/process`, {
@@ -151,11 +219,24 @@ async function reject(po: any) {
       catatan_manajer: catatan
     });
 
-    alert('✅ PO berhasil ditolak');
+    await Swal.fire({
+      icon: 'success',
+      title: 'PO Ditolak',
+      text: 'PO telah dikembalikan ke status Rejected.',
+      confirmButtonColor: '#10b981',
+      timer: 1500,
+      showConfirmButton: false
+    });
+
     await loadPOData();
   } catch (err: any) {
     console.error('Reject error:', err);
-    alert('❌ ' + (err.response?.data?.message || 'Gagal reject PO'));
+    Swal.fire({
+      icon: 'error',
+      title: 'Gagal',
+      text: err.response?.data?.message || 'Gagal reject PO',
+      confirmButtonColor: '#ef4444'
+    });
   }
 }
 

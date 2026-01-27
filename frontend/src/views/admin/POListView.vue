@@ -148,6 +148,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Search, XCircle, ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import Swal from 'sweetalert2';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/auth';
 import type { PurchaseOrder } from '../../types';
@@ -230,22 +231,58 @@ function prevPage() {
 }
 
 async function submitPO(poId: number) {
-  if (!confirm('Submit PO ini untuk approval? PO akan dikirim ke Manajer untuk di-review.')) {
-    return;
-  }
+  const result = await Swal.fire({
+    title: 'Submit PO?',
+    text: "PO akan dikirim ke Manajer untuk review.",
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#10b981', // Emerald-500
+    cancelButtonColor: '#64748b', // Slate-500
+    confirmButtonText: 'Ya, Submit!',
+    cancelButtonText: 'Batal'
+  });
+
+  if (!result.isConfirmed) return;
+
+  // Show loading
+  Swal.fire({
+    title: 'Memproses...',
+    text: 'Mohon tunggu sebentar',
+    allowOutsideClick: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
 
   try {
     const response = await api.post(`/po/${poId}/submit`);
     
     if (response.data.success) {
-      alert('✅ PO berhasil disubmit untuk approval!');
+      await Swal.fire({
+        title: 'Berhasil!',
+        text: 'PO telah disubmit untuk approval.',
+        icon: 'success',
+        confirmButtonColor: '#10b981',
+        timer: 2000,
+        timerProgressBar: true
+      });
       await loadPOs(); // Reload PO list
     } else {
-      alert('❌ ' + (response.data.message || 'Gagal submit PO'));
+      Swal.fire({
+        title: 'Gagal',
+        text: response.data.message || 'Gagal submit PO',
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      });
     }
   } catch (error: any) {
     console.error('Submit PO error:', error);
-    alert('❌ ' + (error.response?.data?.message || 'Terjadi kesalahan saat submit PO'));
+    Swal.fire({
+      title: 'Error',
+      text: error.response?.data?.message || 'Terjadi kesalahan sistem',
+      icon: 'error',
+      confirmButtonColor: '#ef4444'
+    });
   }
 }
 

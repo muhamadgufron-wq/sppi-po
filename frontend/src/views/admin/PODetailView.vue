@@ -17,7 +17,6 @@ const showImageViewer = ref(false);
 const currentImageIndex = ref(0);
 const currentImageUrl = ref('');
 const totalImages = ref(0);
-const imageType = ref<'transfer' | 'shopping'>('shopping');
 
 // Computed properties for conditional sections
 const showApprovedPrices = computed(() => {
@@ -50,9 +49,6 @@ const totalHargaReal = computed(() => {
   return po.value.items.reduce((sum, item) => sum + (Number(item.harga_real) || 0), 0);
 });
 
-const showTransferSection = computed(() => {
-  return po.value && ['DANA_DITRANSFER', 'BELANJA_SELESAI', 'CLOSED'].includes(po.value.status);
-});
 
 onMounted(() => {
   loadPO();
@@ -213,20 +209,6 @@ function viewImage(url: string) {
   totalImages.value = 1;
   currentImageIndex.value = 0;
 }
-
-function viewTransferProof() {
-  if (po.value?.transfer?.proof_image) {
-    currentImageUrl.value = po.value.transfer.proof_image.startsWith('http') 
-      ? po.value.transfer.proof_image 
-      : `http://localhost:3000/${po.value.transfer.proof_image}`;
-    currentImageIndex.value = 0;
-    totalImages.value = 1;
-    imageType.value = 'transfer';
-    showImageViewer.value = true;
-  }
-}
-
-
 
 function closeImageViewer() {
   showImageViewer.value = false;
@@ -468,25 +450,6 @@ function getDeviationClass(real: number, approved: number) {
               </tfoot>
             </table>
           </div>
-        </div>
-
-      </div>
-
-      <!-- Transfer Details Section (Keeping separate as it's a distinct 'receipt') -->
-      <div v-if="showTransferSection && po.transfer" class="bg-white p-5 md:p-6 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.03)] border border-emerald-50">
-        <h3 class="m-0 mb-4 text-lg font-bold text-slate-800 flex items-center gap-2 text-purple-700">🏦 Detail Transfer</h3>
-        <div class="flex flex-col gap-3 text-sm">
-          <div class="flex justify-between py-1 border-b border-slate-50">
-            <span class="text-slate-500">Nominal</span>
-             <span class="font-bold text-purple-700">Rp {{ formatCurrency(po.transfer.amount) }}</span>
-          </div>
-          <div class="flex justify-between py-1 border-b border-slate-50">
-            <span class="text-slate-500">Tanggal</span>
-            <span class="font-medium text-slate-900">{{ formatDate(po.transfer.transfer_date) }}</span>
-          </div>
-          <button v-if="po.transfer.proof_image" @click="viewTransferProof" class="mt-2 w-full py-2 bg-purple-50 text-purple-700 rounded-lg text-xs font-bold hover:bg-purple-100 transition-colors border border-purple-100 flex items-center justify-center gap-2">
-            <span>📄</span> Lihat Bukti Transfer
-          </button>
         </div>
       </div>
     </div>

@@ -60,13 +60,6 @@ const router = createRouter({
       component: () => import('../views/keuangan/TransferView.vue'),
       meta: { requiresAuth: true, roles: [UserRole.KEUANGAN], layout: 'admin' }
     },
-    // Keuangan routes
-    {
-      path: '/keuangan',
-      name: 'keuangan',
-      component: () => import('../views/keuangan/KeuanganView.vue'),
-      meta: { requiresAuth: true, roles: [UserRole.KEUANGAN], layout: 'admin' }
-    },
     // Lapangan routes
     {
       path: '/shopping',

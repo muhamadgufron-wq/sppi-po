@@ -10,8 +10,11 @@ const router = Router();
 router.get('/pending', authenticateToken, authorizeRoles(UserRole.MANAJER), async (req: AuthRequest, res: Response) => {
   try {
     const pos = await query<PurchaseOrder[]>(
-      `SELECT po.*, u.nama_lengkap as created_by_name
+      `SELECT po.*, 
+              d.kode_dapur, d.nama_dapur, d.lokasi as dapur_lokasi,
+              u.nama_lengkap as created_by_name
        FROM purchase_orders po
+       LEFT JOIN dapurs d ON po.dapur_id = d.id
        LEFT JOIN users u ON po.created_by = u.id
        WHERE po.status = 'MENUNGGU_APPROVAL'
        ORDER BY po.created_at ASC`
@@ -55,9 +58,11 @@ router.get('/history', authenticateToken, authorizeRoles(UserRole.MANAJER), asyn
   try {
     const pos = await query<PurchaseOrder[]>(
       `SELECT po.*, 
+              d.kode_dapur, d.nama_dapur, d.lokasi as dapur_lokasi,
               u.nama_lengkap as created_by_name,
               m.nama_lengkap as approved_by_name
        FROM purchase_orders po
+       LEFT JOIN dapurs d ON po.dapur_id = d.id
        LEFT JOIN users u ON po.created_by = u.id
        LEFT JOIN users m ON po.approved_by = m.id
        WHERE po.status IN ('APPROVED', 'REJECTED', 'DANA_DITRANSFER', 'APPROVED_KEUANGAN', 'BELANJA_SELESAI')

@@ -62,10 +62,15 @@ export interface PurchaseOrder {
   created_at: string;
   updated_at: string;
   // Joined fields
+  // Joined fields
   created_by_name?: string;
   approved_by_name?: string;
   processed_by_keuangan_name?: string;
   shopping_completed_by_name?: string;
+  dapur_id?: number;
+  kode_dapur?: string;
+  nama_dapur?: string;
+  dapur_lokasi?: string;
 }
 
 export interface POItem {
@@ -127,6 +132,7 @@ export interface POWithItems extends PurchaseOrder {
 
 export interface CreatePORequest {
   tanggal_po: string;
+  dapur_id: number;
   items: {
     nama_barang: string;
     kategori_sayuran?: string;

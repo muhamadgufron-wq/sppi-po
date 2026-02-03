@@ -23,6 +23,12 @@ const router = createRouter({
     },
     // Admin routes
     {
+      path: '/dapur',
+      name: 'dapur-list',
+      component: () => import('../views/admin/DapurListView.vue'),
+      meta: { requiresAuth: true, roles: [UserRole.ADMIN], layout: 'admin' }
+    },
+    {
       path: '/po/create',
       name: 'create-po',
       component: () => import('../views/admin/CreatePOView.vue'),

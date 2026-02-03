@@ -13,7 +13,8 @@ import {
   Send, 
   ShoppingCart, 
   User,
-  LogOut
+  LogOut,
+  Store
 } from 'lucide-vue-next';
 
 const router = useRouter();
@@ -61,6 +62,8 @@ type MenuEntry = MenuGroup | MenuItem;
 const menus: Record<string, MenuEntry[]> = {
   ADMIN: [
     { type: 'item', label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
+    { type: 'group', label: 'Master Data' },
+    { type: 'item', label: 'Master Dapur', path: '/dapur', icon: Store },
     { type: 'group', label: 'Procurement' },
     { type: 'item', label: 'Buat PO', path: '/po/create', icon: FilePlus },
     { type: 'item', label: 'Daftar PO', path: '/po', icon: ClipboardList },

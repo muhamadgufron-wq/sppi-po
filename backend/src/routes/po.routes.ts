@@ -59,9 +59,9 @@ router.post(
         // Insert PO
         const [poResult] = await conn.execute(
           `INSERT INTO purchase_orders 
-          (po_number, tanggal_po, created_by, status, total_estimasi, catatan_admin)
-          VALUES (?, ?, ?, 'DRAFT', ?, ?)`,
-          [poNumber, poData.tanggal_po, userId, totalEstimasi, poData.catatan_admin || null]
+          (po_number, tanggal_po, dapur_id, created_by, status, total_estimasi, catatan_admin)
+          VALUES (?, ?, ?, ?, 'DRAFT', ?, ?)`,
+          [poNumber, poData.tanggal_po, poData.dapur_id, userId, totalEstimasi, poData.catatan_admin || null]
         );
 
         const poId = (poResult as any).insertId;
@@ -229,9 +229,13 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
     let sql = `
       SELECT 
         po.*,
+        d.kode_dapur,
+        d.nama_dapur,
+        d.lokasi as dapur_lokasi,
         u.nama_lengkap as created_by_name,
         m.nama_lengkap as approved_by_name
       FROM purchase_orders po
+      LEFT JOIN dapurs d ON po.dapur_id = d.id
       LEFT JOIN users u ON po.created_by = u.id
       LEFT JOIN users m ON po.approved_by = m.id
       WHERE 1=1
@@ -240,8 +244,8 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
 
     // Search filter
     if (search) {
-      sql += ' AND po.po_number LIKE ?';
-      params.push(`%${search}%`);
+      sql += ' AND (po.po_number LIKE ? OR d.nama_dapur LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`);
     }
 
     // Add status filter if provided
@@ -301,11 +305,17 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
 
     const po = await queryOne<PurchaseOrder>(
       `SELECT po.*, 
+        d.kode_dapur,
+        d.nama_dapur,
+        d.lokasi as dapur_lokasi,
+        d.pic_name as dapur_pic_name,
+        d.pic_phone as dapur_pic_phone,
         u.nama_lengkap as created_by_name,
         m.nama_lengkap as approved_by_name,
         k.nama_lengkap as processed_by_keuangan_name,
         s.nama_lengkap as shopping_completed_by_name
       FROM purchase_orders po
+      LEFT JOIN dapurs d ON po.dapur_id = d.id
       LEFT JOIN users u ON po.created_by = u.id
       LEFT JOIN users m ON po.approved_by = m.id
       LEFT JOIN users k ON po.processed_by_keuangan = k.id

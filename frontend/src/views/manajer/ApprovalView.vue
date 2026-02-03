@@ -385,6 +385,9 @@ function closeImageViewer() {
                     <span :class="['px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border', getStatusClass(po.status)]">
                       {{ getStatusLabel(po.status) }}
                     </span>
+                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border bg-slate-100 text-slate-600 border-slate-200">
+                      🏢 {{ po.nama_dapur || 'Dapur Umum' }}
+                    </span>
                    </div>
                    <div class="flex flex-wrap gap-3 text-[10px] font-medium text-slate-500">
                      <span class="flex items-center gap-1"><User class="w-3 h-3 text-slate-400" /> {{ po.created_by_name }}</span>

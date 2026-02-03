@@ -12,7 +12,8 @@ import {
   Calendar, 
   CheckCircle2, 
   Lock,
-  Check
+  Check,
+  Building2
 } from 'lucide-vue-next';
 
 const router = useRouter();
@@ -48,6 +49,7 @@ async function loadPOData() {
     if (response.data.success) {
       pos.value = response.data.data.map((po: any) => ({
         ...po,
+        total_modal: po.items ? po.items.reduce((sum: number, item: any) => sum + (Number(item.total_modal) || 0), 0) : 0,
         isExpanded: false, 
         selectedItems: [], // Track selected items for transfer
         nominal_transfer_input: '',
@@ -105,7 +107,7 @@ function getSelectedTotal(po: any) {
   if (!po.items) return 0;
   return po.items
     .filter((i: any) => po.selectedItems.includes(i.id))
-    .reduce((sum: number, i: any) => sum + (Number(i.subtotal_approved) || 0), 0);
+    .reduce((sum: number, i: any) => sum + (Number(i.total_modal) || 0), 0);
 }
 
 function useSelectedTotal(po: any) {
@@ -325,6 +327,7 @@ function closeImageViewer() {
                    </div>
                    <div class="flex flex-wrap gap-3 text-[10px] font-medium text-slate-500">
                      <span class="flex items-center gap-1"><User class="w-3 h-3 text-slate-400" /> {{ po.created_by_name }}</span>
+                     <span class="flex items-center gap-1"><Building2 class="w-3 h-3 text-slate-400" /> {{ po.nama_dapur || 'Unknown' }}</span>
                      <span class="flex items-center gap-1"><Calendar class="w-3 h-3 text-slate-400" /> {{ formatDate(po.tanggal_po) }}</span>
                      <span v-if="po.approved_by_name" class="flex items-center gap-1 text-emerald-600"><CheckCircle2 class="w-3 h-3" /> Appr: {{ po.approved_by_name }}</span>
                    </div>
@@ -333,8 +336,8 @@ function closeImageViewer() {
 
               <div class="flex flex-col md:items-end gap-1">
                 <div>
-                  <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 block md:text-right">Total Approved</span>
-                  <span class="text-lg font-bold text-slate-800">Rp {{ formatCurrency(po.total_approved || 0) }}</span>
+                  <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 block md:text-right">Total Modal</span>
+                  <span class="text-lg font-bold text-slate-800">Rp {{ formatCurrency(po.total_modal || 0) }}</span>
                   <!-- New: Transfer Proof Button -->
                    <button 
                      v-if="po.transfers && po.transfers.length > 0 && po.transfers[0].proof_image"
@@ -390,8 +393,8 @@ function closeImageViewer() {
                     <th class="px-4 py-3">Item</th>
                     <th class="px-4 py-3 text-center">Qty</th>
                     <th class="px-4 py-3 text-center">Satuan</th>
-                    <th class="px-4 py-3 text-right">Harga Approved</th>
-                    <th class="px-4 py-3 text-right">Subtotal</th>
+                    <th class="px-4 py-3 text-right">Harga Modal</th>
+                    <th class="px-4 py-3 text-right">Total Modal</th>
                     <th class="px-4 py-3 text-center">Bukti Transfer</th>
                     <th class="px-4 py-3 text-center">Bukti Belanja</th>
                     <th class="px-4 py-3 text-center">Status</th>
@@ -428,8 +431,8 @@ function closeImageViewer() {
                     </td>
                     <td class="px-4 py-3 text-center font-medium text-slate-600">{{ formatQty(item.qty_estimasi) }}</td>
                     <td class="px-4 py-3 text-center text-slate-500 text-sm">{{ item.satuan }}</td>
-                    <td class="px-4 py-3 text-right text-slate-600">Rp {{ formatCurrency(item.harga_approved || 0) }}</td>
-                    <td class="px-4 py-3 text-right font-bold text-emerald-600">Rp {{ formatCurrency(item.subtotal_approved || 0) }}</td>
+                    <td class="px-4 py-3 text-right text-slate-600">Rp {{ formatCurrency(item.harga_modal || 0) }}</td>
+                    <td class="px-4 py-3 text-right font-bold text-emerald-600">Rp {{ formatCurrency(item.total_modal || 0) }}</td>
                     <td class="px-4 py-3 text-center">
                        <div v-if="item.transfer_id">
                          <div v-for="t in po.transfers" :key="t.id">
@@ -471,9 +474,9 @@ function closeImageViewer() {
                  <!-- Current Selection Summary -->
                  <div class="bg-indigo-50/30 rounded-xl border border-indigo-100 p-4">
                    <div class="flex justify-between items-center mb-2">
-                      <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total PO</span>
+                      <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Modal</span>
                       <span class="text-lg font-bold text-slate-800">
-                        Rp {{ formatCurrency(po.total_approved || 0) }}
+                        Rp {{ formatCurrency(po.total_modal || 0) }}
                       </span>
                    </div>
                    <div class="flex justify-between items-center opacity-70 border-t border-indigo-100/50 pt-2 mt-1">

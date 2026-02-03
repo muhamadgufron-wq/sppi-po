@@ -1,14 +1,44 @@
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { 
+  FilePlus, 
+  Calendar, 
+  Building2, 
+  Save, 
+  Send, 
+  ArrowLeft, 
+  Trash2, 
+  PlusCircle, 
+  DollarSign, 
+  TrendingUp, 
+  Percent,
+} from 'lucide-vue-next';
+import Swal from 'sweetalert2';
 import api from '../../services/api';
 
 const router = useRouter();
 const loading = ref(false);
+const dapurs = ref<any[]>([]);
+
+async function loadDapurs() {
+  try {
+    const response = await api.get('/dapur?all=true'); // Filter active in backend or here? API defaults to all usually, component filters status
+    // Filter only active dapurs for dropdown
+    dapurs.value = response.data.data.filter((d: any) => d.is_active);
+  } catch (error) {
+    console.error('Failed to load dapurs:', error);
+  }
+}
+
+onMounted(() => {
+  loadDapurs();
+});
 
 const formData = ref({
   tanggal_po: new Date().toISOString().split('T')[0],
+  dapur_id: '',
   catatan_admin: '',
   items: [
     { 
@@ -120,25 +150,35 @@ function removeItem(index: number) {
 // Validation
 function validateForm(): boolean {
   if (formData.value.items.length === 0) {
-    alert('Minimal harus ada 1 item!');
+    Swal.fire('Error', 'Minimal harus ada 1 item!', 'error');
+    return false;
+  }
+
+  if (!formData.value.dapur_id) {
+    Swal.fire({
+       icon: 'warning',
+       title: 'Dapur Belum Dipilih',
+       text: 'Mohon pilih dapur tujuan terlebih dahulu!',
+       confirmButtonColor: '#f59e0b'
+    });
     return false;
   }
 
   for (const item of formData.value.items) {
     if (!item.nama_barang.trim()) {
-      alert('Nama barang tidak boleh kosong!');
+      Swal.fire('Items Incomplete', 'Nama barang tidak boleh kosong!', 'warning');
       return false;
     }
     if (item.qty_estimasi <= 0) {
-      alert('Quantity harus lebih dari 0!');
+      Swal.fire('Items Incomplete', 'Quantity harus lebih dari 0!', 'warning');
       return false;
     }
     if (!item.satuan) {
-      alert('Satuan harus dipilih!');
+      Swal.fire('Items Incomplete', 'Satuan harus dipilih!', 'warning');
       return false;
     }
     if (item.harga_modal <= 0) {
-      alert('Harga modal harus lebih dari 0!');
+      Swal.fire('Items Incomplete', 'Harga modal harus lebih dari 0!', 'warning');
       return false;
     }
   }
@@ -171,12 +211,22 @@ async function saveDraft() {
 
     const response = await api.post('/po', payload);
     if (response.data.success) {
-      alert('✅ Penawaran berhasil disimpan sebagai DRAFT!\n\nAnda dapat mengedit atau menghapusnya sebelum mengajukan ke Manajer.');
+      await Swal.fire({
+         icon: 'success',
+         title: 'Draft Disimpan!',
+         text: 'Penawaran berhasil disimpan sebagai draft.',
+         confirmButtonColor: '#10b981'
+      });
       router.push('/po');
     }
   } catch (error: any) {
     console.error(error);
-    alert('❌ ' + (error.response?.data?.message || 'Gagal menyimpan penawaran'));
+    Swal.fire({
+      icon: 'error',
+      title: 'Gagal Menyimpan',
+      text: error.response?.data?.message || 'Gagal menyimpan penawaran',
+      confirmButtonColor: '#ef4444'
+    });
   } finally {
     loading.value = false;
   }
@@ -185,6 +235,19 @@ async function saveDraft() {
 // Submit for Approval
 async function submitForApproval() {
   if (!validateForm()) return;
+
+  const confirm = await Swal.fire({
+    title: 'Ajukan ke Manajer?',
+    text: "PO akan dikirim untuk approval Manajer.",
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#10b981',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: 'Ya, Ajukan!',
+    cancelButtonText: 'Batal'
+  });
+
+  if (!confirm.isConfirmed) return;
 
   loading.value = true;
   try {
@@ -211,13 +274,23 @@ async function submitForApproval() {
       const submitResponse = await api.post(`/po/${poId}/submit`);
       
       if (submitResponse.data.success) {
-        alert('✅ Penawaran berhasil diajukan ke Manajer!\n\nStatus: MENUNGGU APPROVAL\n\nManajer akan mereview dan menyetujui penawaran Anda.');
+        await Swal.fire({
+          icon: 'success',
+          title: 'Berhasil Diajukan!',
+          text: 'Penawaran telah dikirim ke Manajer.',
+          confirmButtonColor: '#10b981'
+        });
         router.push('/po');
       }
     }
   } catch (error: any) {
     console.error(error);
-    alert('❌ ' + (error.response?.data?.message || 'Gagal mengajukan penawaran'));
+    Swal.fire({
+      icon: 'error',
+      title: 'Gagal Mengajukan',
+      text: error.response?.data?.message || 'Gagal mengajukan penawaran',
+      confirmButtonColor: '#ef4444'
+    });
   } finally {
     loading.value = false;
   }
@@ -225,227 +298,253 @@ async function submitForApproval() {
 </script>
 
 <template>
-  <div class="max-w-[1400px] mx-auto">
-      <!-- Header -->
-      <div class="mb-6">
-        <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-3">
-          <div class="flex-1">
-            <h1 class="text-3xl font-bold text-slate-800 mb-2">📋 Buat Penawaran Harga PO</h1>
-            <p class="text-slate-600 text-sm leading-relaxed">
-              Buat penawaran harga untuk pengajuan Purchase Order. Setelah dibuat, ajukan ke Manajer untuk mendapatkan approval.
+  <div class="max-w-[1400px] mx-auto animate-[fadeIn_0.5s_ease-out]">
+      <!-- Header Section -->
+      <div class="mb-8">
+        <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-6 mb-6">
+          <div>
+            <h1 class="text-2xl md:text-3xl font-bold text-slate-800 tracking-tight flex items-center gap-2 mb-2">
+              <FilePlus class="w-8 h-8 text-emerald-600" />
+              Buat PO Baru
+            </h1>
+            <p class="text-slate-500 font-medium">
+              Isi formulir di bawah untuk membuat pengajuan Purchase Order baru.
             </p>
           </div>
-          <div class="flex items-center gap-2 bg-white px-4 py-2.5 rounded-lg border border-slate-200 shadow-sm">
-             <span class="text-sm font-semibold text-slate-600">📅 Tanggal:</span>
-             <input 
-                v-model="formData.tanggal_po" 
-                type="date" 
-                required 
-                class="text-sm font-bold text-slate-800 outline-none bg-transparent"
-              />
-          </div>
-        </div>
-
-        <!-- Workflow Progress Indicator -->
-        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
-          <div class="flex items-center justify-between text-xs font-semibold overflow-x-auto">
-            <div class="flex items-center gap-2 whitespace-nowrap">
-              <div class="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">1</div>
-              <span class="text-blue-700">Buat Penawaran</span>
-            </div>
-            <div class="flex-1 h-0.5 bg-slate-300 mx-2 min-w-[20px]"></div>
-            <div class="flex items-center gap-2 whitespace-nowrap">
-              <div class="w-7 h-7 rounded-full bg-slate-300 text-slate-600 flex items-center justify-center">2</div>
-              <span class="text-slate-500">Approval Manajer</span>
-            </div>
-            <div class="flex-1 h-0.5 bg-slate-300 mx-2 min-w-[20px]"></div>
-            <div class="flex items-center gap-2 whitespace-nowrap">
-              <div class="w-7 h-7 rounded-full bg-slate-300 text-slate-600 flex items-center justify-center">3</div>
-              <span class="text-slate-500">Transfer Dana</span>
-            </div>
-            <div class="flex-1 h-0.5 bg-slate-300 mx-2 min-w-[20px]"></div>
-            <div class="flex items-center gap-2 whitespace-nowrap">
-              <div class="w-7 h-7 rounded-full bg-slate-300 text-slate-600 flex items-center justify-center">4</div>
-              <span class="text-slate-500">Belanja</span>
-            </div>
-            <div class="flex-1 h-0.5 bg-slate-300 mx-2 min-w-[20px]"></div>
-            <div class="flex items-center gap-2 whitespace-nowrap">
-              <div class="w-7 h-7 rounded-full bg-slate-300 text-slate-600 flex items-center justify-center">5</div>
-              <span class="text-slate-500">Selesai</span>
-            </div>
+          
+          <!-- Key Meta Fields -->
+          <div class="flex flex-col sm:flex-row gap-3">
+             <div class="bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+               <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                 <Calendar class="w-5 h-5" />
+               </div>
+               <div>
+                 <span class="block text-[10px] uppercase font-bold text-slate-400 tracking-wider">Tanggal PO</span>
+                 <input 
+                    v-model="formData.tanggal_po" 
+                    type="date" 
+                    required 
+                    class="text-sm font-bold text-slate-800 outline-none bg-transparent cursor-pointer focus:ring-2 focus:ring-blue-500/20 rounded"
+                  />
+               </div>
+             </div>
+             
+             <div class="bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+               <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                 <Building2 class="w-5 h-5" />
+               </div>
+               <div>
+                  <span class="block text-[10px] uppercase font-bold text-slate-400 tracking-wider">Dapur Tujuan <span class="text-red-500">*</span></span>
+                  <select 
+                    v-model="formData.dapur_id" 
+                    required 
+                    class="text-sm font-bold text-slate-800 outline-none bg-transparent min-w-[180px] cursor-pointer focus:ring-2 focus:ring-emerald-500/20 rounded appearance-none"
+                  >
+                    <option value="" disabled>-- Pilih Dapur --</option>
+                    <option v-for="dapur in dapurs" :key="dapur.id" :value="dapur.id">
+                      {{ dapur.nama_dapur }}
+                    </option>
+                  </select>
+               </div>
+             </div>
           </div>
         </div>
       </div>
+      <!-- Financial Summary Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+        <!-- Total Modal -->
+        <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg shadow-indigo-200 relative overflow-hidden group">
+          <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <DollarSign class="w-24 h-24" />
+          </div>
+          <div class="relative z-10">
+            <p class="text-indigo-100 text-sm font-medium mb-1 flex items-center gap-2">
+              Total Modal Estimasi
+            </p>
+            <h3 class="text-3xl font-bold tracking-tight">Rp {{ formatNumber(summary.total_modal) }}</h3>
+          </div>
+        </div>
 
-      <!-- Summary Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div class="bg-white p-5 rounded-xl border-2 border-blue-200 shadow-sm">
-          <p class="text-xs font-bold text-blue-600 uppercase tracking-wider mb-1.5">Total Modal</p>
-          <div class="text-2xl font-bold text-blue-700">Rp {{ formatNumber(summary.total_modal) }}</div>
+        <!-- Target Omzet -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] relative overflow-hidden group">
+          <div class="absolute -right-6 -top-6 w-24 h-24 bg-emerald-50 rounded-full group-hover:bg-emerald-100 transition-colors"></div>
+          <div class="relative z-10">
+             <p class="text-slate-500 text-sm font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+               <TrendingUp class="w-4 h-4 text-emerald-500" /> Target Jual
+             </p>
+             <h3 class="text-2xl font-bold text-slate-800">Rp {{ formatNumber(summary.total_jual) }}</h3>
+          </div>
         </div>
-        <div class="bg-white p-5 rounded-xl border-2 border-emerald-200 shadow-sm">
-          <p class="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1.5">Target Omzet</p>
-          <div class="text-2xl font-bold text-emerald-700">Rp {{ formatNumber(summary.total_jual) }}</div>
-        </div>
-        <div class="bg-white p-5 rounded-xl border-2 border-violet-200 shadow-sm">
-           <div class="flex justify-between items-start">
-              <div>
-                <p class="text-xs font-bold text-violet-600 uppercase tracking-wider mb-1.5">Potensi Profit</p>
-                <div class="text-2xl font-bold text-violet-700">Rp {{ formatNumber(summary.profit) }}</div>
-              </div>
-              <div class="text-right">
-                <span class="block text-[10px] font-bold text-slate-500 uppercase">Margin</span>
-                <span class="text-xl font-bold" :class="totalMargin >= 20 ? 'text-emerald-600' : 'text-amber-500'">{{ formatDecimal(totalMargin) }}%</span>
-              </div>
+
+        <!-- Profit Analysis -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] relative overflow-hidden">
+           <div class="flex justify-between items-end">
+             <div>
+               <p class="text-slate-500 text-sm font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+                 <Percent class="w-4 h-4 text-violet-500" /> Potensi Profit
+               </p>
+               <h3 class="text-2xl font-bold text-violet-600">Rp {{ formatNumber(summary.profit) }}</h3>
+             </div>
+             <div class="text-right">
+               <span class="text-xs text-slate-400 font-medium mb-1 block">Margin</span>
+               <span class="text-lg font-bold px-3 py-1 rounded-lg" :class="totalMargin >= 20 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'">
+                 {{ formatDecimal(totalMargin) }}%
+               </span>
+             </div>
            </div>
         </div>
       </div>
 
-      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+      <!-- Main Form Area -->
+      <div class="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden mb-12">
         <form @submit.prevent="submitForApproval">
-          <!-- Toolbar -->
-          <div class="p-4 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100">
-             <h3 class="font-bold text-slate-800 text-lg">📦 Rincian Item Penawaran</h3>
-             <p class="text-xs text-slate-600 mt-1">Masukkan detail barang, harga modal, dan target harga jual</p>
+          
+          <!-- Table Toolbar -->
+          <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+             <div>
+               <h3 class="font-bold text-slate-800 text-lg">Rincian Barang</h3>
+               <p class="text-xs text-slate-500 mt-0.5">Input detail item, harga modal, dan target jual.</p>
+             </div>
           </div>
 
-          <!-- Table -->
+          <!-- Data Grid -->
           <div class="overflow-x-auto">
             <table class="w-full text-sm text-left">
               <thead>
-                <!-- Section Headers -->
-                <tr class="bg-gradient-to-r from-slate-100 to-slate-50 border-b border-slate-300">
-                  <th colspan="4" class="px-3 py-2 text-xs font-bold text-slate-600 uppercase tracking-wider border-r border-slate-300">Detail Barang</th>
-                  <th colspan="2" class="px-3 py-2 text-xs font-bold text-blue-700 uppercase tracking-wider border-r border-slate-300 bg-blue-50/50">💰 Modal</th>
-                  <th colspan="2" class="px-3 py-2 text-xs font-bold text-emerald-700 uppercase tracking-wider border-r border-slate-300 bg-emerald-50/50">💵 Penjualan</th>
-                  <th colspan="2" class="px-3 py-2 text-xs font-bold text-violet-700 uppercase tracking-wider bg-violet-50/50">📈 Profit</th>
-                  <th class="px-2 py-2"></th>
-                </tr>
-                <!-- Column Headers -->
-<tr class="bg-slate-100 text-slate-700 font-semibold border-b-2 border-slate-300 text-xs">
-                  <th class="px-3 py-2.5 border-r border-slate-200 w-[25%]">Nama Item</th>
-                  <th class="px-2 py-2.5 text-center border-r border-slate-200 w-[8%]">Qty</th>
-                  <th class="px-2 py-2.5 text-center border-r border-slate-200 w-[8%]">Satuan</th>
-                  <th class="px-2 py-2.5 text-center text-amber-700 border-r border-slate-300 w-[8%]" title="Estimasi susut/berkurang">Susut</th>
-                  <th class="px-2 py-2.5 text-right text-blue-700 border-r border-slate-200 bg-blue-50/30 w-[15%]">Harga</th>
-                  <th class="px-2 py-2.5 text-right text-blue-700 border-r border-slate-300 bg-blue-50/30 w-[15%]">Total</th>
-                  <th class="px-2 py-2.5 text-right text-emerald-700 border-r border-slate-200 bg-emerald-50/30 w-[15%]">Harga</th>
-                  <th class="px-2 py-2.5 text-right text-emerald-700 border-r border-slate-300 bg-emerald-50/30 w-[15%]">Total</th>
-                  <th class="px-2 py-2.5 text-right text-violet-700 border-r border-slate-200 bg-violet-50/30 w-auto">Profit</th>
-                  <th class="px-2 py-2.5 text-center text-violet-700 bg-violet-50/30 w-auto">%</th>
-                  <th class="px-2 py-2.5 w-auto"></th>
+                <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider font-bold">
+                  <th class="px-4 py-4 w-[20%] pl-6">Nama Barang</th>
+                  <th class="px-2 py-4 text-center w-[7%]">Qty</th>
+                  <th class="px-2 py-4 text-center w-[8%]">Satuan</th>
+                  <th class="px-2 py-4 text-center w-[7%] text-amber-600" title="Estimasi susut/rusak">Susut</th>
+                  <th class="px-2 py-4 text-right w-[11%] text-indigo-600">Harga Modal</th>
+                  <th class="px-2 py-4 text-right w-[11%] text-indigo-600">Total Modal</th>
+                  <th class="px-2 py-4 text-right w-[11%] text-emerald-600">Harga Jual</th>
+                  <th class="px-2 py-4 text-right w-[11%] text-emerald-600">Total Jual</th>
+                  <th class="px-2 py-4 text-right w-[9%] text-violet-600">Profit</th>
+                  <th class="px-2 py-4 text-center w-[5%] text-violet-600">%</th>
+                  <th class="px-4 py-4 text-center w-[4%] pr-6"></th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-200">
-                <tr v-for="(item, index) in formData.items" :key="index" class="hover:bg-slate-50/50 transition-colors">
-                  <!-- Nama Item -->
-                  <td class="px-3 py-2.5 align-middle border-r border-slate-200">
+              <tbody class="divide-y divide-slate-100">
+                <tr v-for="(item, index) in formData.items" :key="index" class="group hover:bg-slate-50/50 transition-colors">
+                  <!-- Nama Barang -->
+                  <td class="px-4 py-3 pl-6 align-middle">
                     <input 
                       v-model="item.nama_barang" 
-                      class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none text-sm font-medium" 
+                      class="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-sm font-semibold text-slate-700 transition-all placeholder:font-normal" 
                       placeholder="Nama barang..." 
                       required 
                     />
                   </td>
                   
                   <!-- Qty -->
-                  <td class="px-2 py-2.5 align-middle border-r border-slate-200">
+                  <td class="px-2 py-3 align-middle">
                     <input 
                       v-model.number="item.qty_estimasi" 
                       @input="calculateItem(item)" 
                       type="number" 
                       min="0.01" 
                       step="0.01"
-                      class="w-full px-2 py-2 text-center border border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none text-sm font-bold" 
+                      class="w-full px-2 py-2.5 text-center bg-white border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-sm font-bold text-slate-700" 
                       required 
-                      placeholder="1"
+                      placeholder="0"
                     />
                   </td>
                   
                   <!-- Satuan -->
-                  <td class="px-2 py-2.5 align-middle border-r border-slate-200">
+                  <td class="px-2 py-3 align-middle">
                      <select 
                        v-model="item.satuan" 
-                       class="w-full px-2 py-2 border border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none bg-white text-sm font-medium"
+                       class="w-full px-2 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-sm font-medium text-slate-600 cursor-pointer"
                        required
                      >
-                        <option value="">-</option>
+                        <option value="">Pilih</option>
                         <option value="Kg">Kg</option>
                         <option value="Pcs">Pcs</option>
                         <option value="Box">Box</option>
                         <option value="Karung">Karung</option>
                         <option value="Liter">Liter</option>
+                        <option value="Ikat">Ikat</option>
                      </select>
                   </td>
 
-                  <!-- Estimasi Susut -->
-                  <td class="px-2 py-2.5 align-middle border-r border-slate-300">
+                  <!-- Susut -->
+                  <td class="px-2 py-3 align-middle">
                     <input 
                       v-model.number="item.estimasi_susut" 
                       @input="calculateItem(item)" 
                       type="number" 
                       min="0"
                       step="0.01"
-                      class="w-full px-2 py-2 text-center border border-amber-300 bg-amber-50/50 text-amber-900 rounded-lg focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none text-sm font-bold" 
+                      class="w-full px-2 py-2.5 text-center bg-amber-50 border border-amber-200 text-amber-900 rounded-xl focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 outline-none text-sm font-bold placeholder:text-amber-300" 
                       placeholder="0" 
                     />
                   </td>
 
                   <!-- Harga Modal -->
-                  <td class="px-2 py-2.5 align-middle border-r border-slate-200 bg-blue-50/30">
-                     <input 
-                       :value="formatCurrency(item.harga_modal)" 
-                       @input="formatHargaModal(item, $event)" 
-                       type="text" 
-                       inputmode="numeric"
-                       class="w-full px-3 py-2 text-right border-2 border-blue-300 bg-white text-blue-900 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none font-bold text-sm" 
-                       placeholder="0" 
-                       required
-                     />
+                  <td class="px-2 py-3 align-middle">
+                     <div class="relative">
+                       <input 
+                         :value="formatCurrency(item.harga_modal)" 
+                         @input="formatHargaModal(item, $event)" 
+                         type="text" 
+                         inputmode="numeric"
+                         class="w-full px-3 py-2.5 text-right bg-indigo-50/30 border border-indigo-100 text-indigo-900 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none font-bold text-sm" 
+                         placeholder="0" 
+                         required
+                       />
+                     </div>
                   </td>
 
                   <!-- Total Modal (Readonly) -->
-                  <td class="px-3 py-2.5 text-right border-r border-slate-300 align-middle bg-blue-50/50">
-                    <div class="font-bold text-sm text-blue-900 bg-blue-100/50 px-2 py-1.5 rounded-md inline-block min-w-[80px]">{{ formatNumber(item.total_modal) }}</div>
+                  <td class="px-2 py-3 align-middle text-right">
+                    <span class="font-bold text-sm text-indigo-700 block bg-indigo-50/50 py-2.5 px-3 rounded-xl border border-indigo-100/50">{{ formatNumber(item.total_modal) }}</span>
                   </td>
 
                   <!-- Harga Jual -->
-                  <td class="px-2 py-2.5 align-middle border-r border-slate-200 bg-emerald-50/30">
-                     <input 
-                       :value="formatCurrency(item.harga_jual)" 
-                       @input="formatHargaJual(item, $event)" 
-                       type="text" 
-                       inputmode="numeric"
-                       class="w-full px-3 py-2 text-right border-2 border-emerald-300 bg-white text-emerald-900 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none font-bold text-sm" 
-                       placeholder="0" 
-                     />
+                  <td class="px-2 py-3 align-middle">
+                      <div class="relative">
+                       <input 
+                         :value="formatCurrency(item.harga_jual)" 
+                         @input="formatHargaJual(item, $event)" 
+                         type="text" 
+                         inputmode="numeric"
+                         class="w-full px-3 py-2.5 text-right bg-emerald-50/30 border border-emerald-100 text-emerald-900 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none font-bold text-sm" 
+                         placeholder="0" 
+                       />
+                     </div>
                   </td>
 
                   <!-- Total Jual (Readonly) -->
-                  <td class="px-3 py-2.5 text-right border-r border-slate-300 align-middle bg-emerald-50/50">
-                     <div class="font-bold text-sm text-emerald-900 bg-emerald-100/50 px-2 py-1.5 rounded-md inline-block min-w-[80px]">{{ formatNumber(item.total_jual) }}</div>
+                  <td class="px-2 py-3 align-middle text-right">
+                     <span class="font-bold text-sm text-emerald-700 block bg-emerald-50/50 py-2.5 px-3 rounded-xl border border-emerald-100/50">{{ formatNumber(item.total_jual) }}</span>
                   </td>
 
-                  <!-- Profit (Readonly) -->
-                  <td class="px-3 py-2.5 text-right border-r border-slate-200 align-middle bg-violet-50/40">
-                    <div class="font-bold text-sm px-2 py-1.5 rounded-md inline-block min-w-[80px]" :class="item.profit >= 0 ? 'text-violet-900 bg-violet-100/50' : 'text-red-700 bg-red-100'">{{ formatNumber(item.profit) }}</div>
+                  <!-- Profit Amount -->
+                  <td class="px-2 py-3 align-middle text-right">
+                     <span class="font-bold text-sm block py-1.5 px-2 rounded-lg w-full" 
+                           :class="item.profit >= 0 ? 'text-violet-700 bg-violet-50 border border-violet-100' : 'text-red-600 bg-red-50 border border-red-100'">
+                       {{ formatNumber(item.profit) }}
+                     </span>
                   </td>
 
-                  <!-- Persentase (Readonly) -->
-                  <td class="px-2 py-2.5 text-center align-middle bg-violet-50/40">
-                    <span class="text-xs font-bold px-2.5 py-1.5 rounded-lg" :class="item.margin >= 20 ? 'text-emerald-800 bg-emerald-200' : (item.margin > 0 ? 'text-amber-800 bg-amber-200' : 'text-red-700 bg-red-200')">{{ formatDecimal(item.margin) }}%</span>
+                  <!-- Profit Margin (%) -->
+                  <td class="px-2 py-3 align-middle text-center">
+                    <span class="text-xs font-bold block" :class="item.margin >= 20 ? 'text-emerald-600' : (item.margin > 0 ? 'text-amber-600' : 'text-slate-400')">
+                      {{ formatDecimal(item.margin) }}%
+                    </span>
                   </td>
 
                   <!-- Delete -->
-                  <td class="px-2 py-2.5 text-center align-middle">
+                  <td class="px-4 py-3 align-middle text-center pr-6">
                     <button 
                       type="button" 
                       @click="removeItem(index)" 
-                      class="text-slate-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-md transition-colors" 
+                      class="text-slate-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-all" 
                       :disabled="formData.items.length === 1"
-                      title="Hapus item"
+                      title="Hapus baris"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                      <Trash2 class="w-4 h-4" />
                     </button>
                   </td>
                 </tr>
@@ -453,60 +552,57 @@ async function submitForApproval() {
             </table>
           </div>
 
-          <!-- Add Button -->
-          <div class="p-3 bg-slate-50 border-t border-slate-200">
+          <!-- Add Button (Bottom) -->
+          <div class="p-3 bg-slate-50 border-t border-slate-100 flex justify-center">
              <button 
                type="button" 
                @click="addItem" 
-               class="w-full py-3 border-2 border-dashed border-slate-300 rounded-lg text-slate-600 font-bold hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all flex items-center justify-center gap-2"
+               class="px-6 py-2 text-slate-500 hover:text-emerald-600 font-bold text-sm flex items-center gap-2 transition-colors"
              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                Tambah Item Baru
+                <PlusCircle class="w-4 h-4" />
+                Tambah Barang Lainnya
              </button>
           </div>
 
-          <!-- Bottom Actions -->
-          <div class="p-5 bg-white border-t-2 border-slate-200 flex flex-col lg:flex-row gap-4 items-start rounded-b-xl">
+          <!-- Footer Actions & Notes -->
+          <div class="p-6 bg-white border-t border-slate-100 flex flex-col lg:flex-row gap-8 items-start">
              <div class="flex-1 w-full">
-                <label class="block text-sm font-bold text-slate-700 mb-2">💬 Catatan Tambahan</label>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Catatan Admin</label>
                 <textarea 
                   v-model="formData.catatan_admin" 
                   rows="3" 
-                  class="w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm" 
-                  placeholder="Tambahkan catatan atau informasi penting lainnya..."
+                  class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none text-sm transition-all" 
+                  placeholder="Tambahkan catatan khusus untuk manajer atau tim lapangan..."
                 ></textarea>
              </div>
+             
              <div class="flex flex-col sm:flex-row gap-3 self-end w-full lg:w-auto">
                 <button 
                   type="button" 
                   @click="$router.back()" 
-                  class="px-6 py-3 border-2 border-slate-300 rounded-lg text-slate-700 font-bold text-sm hover:bg-slate-100 transition-colors flex items-center justify-center gap-2"
+                  class="px-6 py-3.5 border border-slate-200 rounded-xl text-slate-600 font-bold text-sm hover:bg-slate-50 hover:text-slate-800 transition-all flex items-center justify-center gap-2 shadow-sm"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                  <ArrowLeft class="w-4 h-4" />
                   Batal
                 </button>
                 <button 
                   type="button"
                   @click="saveDraft" 
                   :disabled="loading" 
-                  class="px-6 py-3 bg-slate-600 text-white rounded-lg font-bold text-sm hover:bg-slate-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                  class="px-6 py-3.5 bg-slate-800 text-white rounded-xl font-bold text-sm hover:bg-slate-900 shadow-lg shadow-slate-200 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                   <Save class="w-4 h-4" />
                    <span v-if="!loading">Simpan Draft</span>
-                   <span v-else class="flex items-center gap-2">
-                     <span class="animate-spin">⏳</span> Menyimpan...
-                   </span>
+                   <span v-else>Menyimpan...</span>
                 </button>
                 <button 
                   type="submit" 
                   :disabled="loading" 
-                  class="px-6 py-3 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-lg font-bold text-sm hover:from-emerald-700 hover:to-green-700 shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                  class="px-8 py-3.5 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 shadow-lg shadow-emerald-200 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed min-w-[180px]"
                 >
-                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-                   <span v-if="!loading">Ajukan ke Manajer</span>
-                   <span v-else class="flex items-center gap-2">
-                     <span class="animate-spin">⏳</span> Mengajukan...
-                   </span>
+                   <Send class="w-4 h-4" />
+                   <span v-if="!loading">Ajukan Penawaran</span>
+                   <span v-else>Memproses...</span>
                 </button>
              </div>
           </div>

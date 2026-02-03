@@ -15,11 +15,13 @@ router.get('/pending', authenticateToken, authorizeRoles(UserRole.KEUANGAN), asy
               u.nama_lengkap as created_by_name,
               m.nama_lengkap as approved_by_name,
               k.nama_lengkap as processed_by_name,
+              d.nama_dapur,
               (SELECT COUNT(*) FROM po_items WHERE po_id = po.id AND transfer_id IS NULL) as pending_items_count
        FROM purchase_orders po
        LEFT JOIN users u ON po.created_by = u.id
        LEFT JOIN users m ON po.approved_by = m.id
        LEFT JOIN users k ON po.processed_by_keuangan = k.id
+       LEFT JOIN dapurs d ON po.dapur_id = d.id
        WHERE po.status IN ('APPROVED', 'PARTIAL_TRANSFER')
        ORDER BY po.status ASC, po.approved_at ASC`
     );
@@ -58,11 +60,13 @@ router.get('/history', authenticateToken, authorizeRoles(UserRole.KEUANGAN), asy
       `SELECT po.*, 
               u.nama_lengkap as created_by_name,
               m.nama_lengkap as approved_by_name,
-              k.nama_lengkap as processed_by_name
+              k.nama_lengkap as processed_by_name,
+              d.nama_dapur
        FROM purchase_orders po
        LEFT JOIN users u ON po.created_by = u.id
        LEFT JOIN users m ON po.approved_by = m.id
        LEFT JOIN users k ON po.processed_by_keuangan = k.id
+       LEFT JOIN dapurs d ON po.dapur_id = d.id
        WHERE po.status IN ('APPROVED_KEUANGAN', 'BELANJA_SELESAI')
        ORDER BY po.updated_at DESC
        LIMIT 50`

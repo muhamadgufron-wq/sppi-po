@@ -64,7 +64,13 @@
               <h3 class="m-0 text-sm font-bold text-slate-800 tracking-tight group-hover:text-emerald-600 transition-colors">
                 <span v-html="highlightMatch(po.po_number)"></span>
               </h3>
-              <p class="m-0 text-[10px] text-slate-400 font-medium mt-0.5">{{ formatDate(po.tanggal_po) }}</p>
+              <p class="m-0 text-[10px] text-slate-400 font-medium mt-0.5">
+                {{ formatDate(po.tanggal_po) }}
+                <span class="mx-1">•</span>
+                <span class="inline-flex items-center gap-1 font-semibold text-slate-600">
+                  🏢 {{ po.nama_dapur || 'Dapur Umum' }}
+                </span>
+              </p>
             </div>
           </div>
           <span 

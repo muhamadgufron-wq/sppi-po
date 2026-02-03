@@ -309,6 +309,15 @@ function getStatusLabel(status: string) {
                 <h1 class="m-0 text-2xl font-bold text-slate-800">{{ po.po_number }}</h1>
                 <span :class="['px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider border', getStatusClass(po.status)]">{{ getStatusLabel(po.status) }}</span>
               </div>
+              
+              <!-- Dapur Info -->
+              <div class="flex items-center gap-2 text-sm text-slate-600 font-medium mb-2">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-slate-50 to-slate-100 rounded-md border border-slate-200 text-slate-700 shadow-sm">
+                  🏢 {{ po.nama_dapur || 'Dapur Umum' }} 
+                  <span v-if="po.dapur_lokasi" class="text-slate-500 font-normal border-l border-slate-300 pl-1.5 ml-0.5 text-xs">{{ po.dapur_lokasi }}</span>
+                </span>
+              </div>
+
               <p class="text-slate-500 text-sm">Dibuat pada {{ formatDateTime(po.created_at) }} oleh <span class="font-semibold text-slate-700">{{ po.created_by_name }}</span></p>
             </div>
             <div class="flex items-center gap-2">

@@ -20,6 +20,12 @@ const layout = computed(() => {
 </script>
 
 <style>
+/* Prevent layout shift by always showing scrollbar gutter */
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
 #app {
   min-height: 100vh;
 }

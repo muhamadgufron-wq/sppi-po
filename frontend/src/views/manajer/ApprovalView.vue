@@ -59,8 +59,7 @@ async function loadPOData() {
         catatan_manajer_input: po.catatan_manajer || '',
         items: po.items?.map((item: any) => ({
           ...item,
-          harga_approved_input: item.harga_approved ? formatPriceInput(item.harga_approved) : formatPriceInput(item.harga_estimasi), // Default fill with estimated if no approved
-          harga_approved_value: item.harga_approved || item.harga_estimasi || 0 // Default value
+          harga_jual_input: formatPriceInput(item.harga_jual || 0)
         })) || []
       }));
     } else {
@@ -74,6 +73,37 @@ async function loadPOData() {
   }
 }
 
+// Profit Analysis Totals
+function getTotalModal(po: any): number {
+  if (!po.items || po.items.length === 0) return 0;
+  return po.items.reduce((total: number, item: any) => {
+    return total + (Number(item.total_modal) || 0);
+  }, 0);
+}
+
+function getTotalJual(po: any): number {
+  if (!po.items || po.items.length === 0) return 0;
+  return po.items.reduce((total: number, item: any) => {
+    return total + (Number(item.total_harga_jual) || 0);
+  }, 0);
+}
+
+function getTotalProfit(po: any): number {
+  if (!po.items || po.items.length === 0) return 0;
+  return po.items.reduce((total: number, item: any) => {
+    return total + (Number(item.profit) || 0);
+  }, 0);
+}
+
+function getAverageMargin(po: any): number {
+  if (!po.items || po.items.length === 0) return 0;
+  const itemsWithMargin = po.items.filter((item: any) => item.margin);
+  if (itemsWithMargin.length === 0) return 0;
+  const totalMargin = itemsWithMargin.reduce((sum: number, item: any) => sum + (Number(item.margin) || 0), 0);
+  return totalMargin / itemsWithMargin.length;
+}
+
+// Price input handling for manager adjustments
 function formatPriceInput(value: number): string {
   if (!value && value !== 0) return '';
   return Math.round(value).toLocaleString('id-ID');
@@ -85,49 +115,53 @@ function parsePriceInput(value: string): number {
   return parseInt(cleaned) || 0;
 }
 
-function updateApprovedPrice(item: any) {
-  const numericValue = parsePriceInput(item.harga_approved_input);
-  item.harga_approved_value = numericValue;
+function updateHargaJual(item: any) {
+  // Parse input to number
+  const hargaJualBaru = parsePriceInput(item.harga_jual_input);
+  item.harga_jual = hargaJualBaru;
   
-  // Format the input
-  // const formatted = formatPriceInput(numericValue); // Optional: Auto-format while typing (can be annoying)
-  // item.harga_approved_input = formatted; 
-}
-
-function getApprovedSubtotal(item: any): number {
+  // Recalculate
   const qty = Number(item.qty_estimasi) || 0;
-  const harga = item.harga_approved_value || 0;
-  return qty * harga;
+  const totalModal = Number(item.total_modal) || 0;
+  
+  // Total Jual
+  item.total_harga_jual = qty * hargaJualBaru;
+  
+  // Profit
+  item.profit = item.total_harga_jual - totalModal;
+  
+  // Margin
+  if (item.total_harga_jual > 0) {
+    item.margin = (item.profit / item.total_harga_jual) * 100;
+  } else {
+    item.margin = 0;
+  }
 }
 
-function getTotalApproved(po: any): number {
-  if (!po.items || po.items.length === 0) return 0;
-  return po.items.reduce((total: number, item: any) => {
-    return total + getApprovedSubtotal(item);
-  }, 0);
-}
-
-function validateApprovedPrices(po: any): boolean {
+function validatePrices(po: any): boolean {
   if (!po.items || po.items.length === 0) return false;
-  return po.items.every((item: any) => item.harga_approved_value >= 0); // Allow 0, but usually > 0
+  return po.items.every((item: any) => item.harga_jual > 0);
 }
 
 async function approve(po: any) {
-  if (!validateApprovedPrices(po)) {
+  // Validate prices first
+  if (!validatePrices(po)) {
     Swal.fire({
       icon: 'warning',
-      title: 'Harga Invalid',
-      text: 'Mohon periksa harga approved. Pastikan tidak ada yang negatif.',
+      title: 'Harga Tidak Valid',
+      text: 'Pastikan semua harga jual sudah diisi dengan benar.',
       confirmButtonColor: '#f59e0b'
     });
-  } else {
+    return;
+  }
 
   const result = await Swal.fire({
     title: `Approve ${po.po_number}?`,
     html: `
       <div class="text-left bg-slate-50 p-4 rounded-lg border border-slate-200 mb-2">
-        <p class="text-sm text-slate-500 mb-1">Total Approved:</p>
-        <p class="text-2xl font-bold text-emerald-600">Rp ${formatCurrency(getTotalApproved(po))}</p>
+        <p class="text-sm text-slate-500 mb-1">Total Profit:</p>
+        <p class="text-2xl font-bold text-emerald-600">Rp ${formatCurrency(getTotalProfit(po))}</p>
+        <p class="text-xs text-slate-400 mt-1">Margin: ${getAverageMargin(po).toFixed(1)}%</p>
       </div>
       <p class="text-sm text-slate-500">PO akan diteruskan ke bagian Keuangan.</p>
     `,
@@ -150,15 +184,19 @@ async function approve(po: any) {
   });
 
   try {
-    const approved_prices = po.items.map((item: any) => ({
+    // Prepare adjusted prices data
+    const adjusted_prices = po.items.map((item: any) => ({
       item_id: item.id,
-      harga_approved: item.harga_approved_value
+      harga_jual: item.harga_jual,
+      total_harga_jual: item.total_harga_jual,
+      profit: item.profit,
+      margin: item.margin
     }));
 
     await api.post(`/approval/${po.id}/process`, {
       action: 'approve',
       catatan_manajer: po.catatan_manajer_input || null,
-      approved_prices
+      adjusted_prices
     });
 
     await Swal.fire({
@@ -179,7 +217,6 @@ async function approve(po: any) {
       text: err.response?.data?.message || 'Gagal approve PO',
       confirmButtonColor: '#ef4444'
     });
-  }
   }
 }
 
@@ -278,7 +315,7 @@ function closeImageViewer() {
 
 </script>
 
-<style>
+<style scoped>
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -363,8 +400,8 @@ function closeImageViewer() {
 
               <div class="flex flex-col md:items-end gap-1">
                 <div>
-                  <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 block md:text-right">Total Estimasi</span>
-                  <span class="text-lg font-bold text-slate-800">Rp {{ formatCurrency(po.total_estimasi) }}</span>
+                  <span class="text-[9px] font-bold text-emerald-600 uppercase tracking-wider mb-0.5 block md:text-right">Total Jual</span>
+                  <span class="text-lg font-bold text-emerald-700">Rp {{ formatCurrency(getTotalJual(po)) }}</span>
                 </div>
                 <button 
                   class="text-[10px] font-bold text-slate-500 hover:text-emerald-600 flex items-center gap-1 md:justify-end transition-colors mt-1"
@@ -376,23 +413,33 @@ function closeImageViewer() {
             </div>
           </div>
 
-          <!-- Card Body -->
-          <div v-show="po.expanded" class="p-5 md:p-6 bg-white transition-all duration-300 ease-in-out">
+          <!-- Card Body with Smooth CSS Grid Transition -->
+          <div 
+            class="grid overflow-hidden transition-all duration-300 ease-in-out"
+            :style="{ 
+              gridTemplateRows: po.expanded ? '1fr' : '0fr'
+            }"
+          >
+            <div class="min-h-0">
+              <div class="p-5 md:p-6 bg-white">
             <h4 class="text-xs font-bold text-slate-800 mb-4 uppercase tracking-wider flex items-center gap-2">
               <Package class="w-4 h-4 text-emerald-600" /> Detail Barang
             </h4>
             
             <!-- Table Container -->
-            <div class="border border-slate-200 rounded-xl overflow-hidden mb-6">
+            <div class="border border-slate-200 rounded-xl overflow-x-auto mb-6">
               <table class="w-full text-xs text-left">
                 <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
                   <tr>
                     <th class="px-4 py-3">Item</th>
                     <th class="px-4 py-3 text-center">Qty</th>
                     <th class="px-4 py-3 text-center">Satuan</th>
-                    <th class="px-4 py-3 text-right">Harga Est.</th>
-                    <th class="px-4 py-3 text-right w-[25%] bg-indigo-50/30 text-indigo-900 border-l border-indigo-100">Harga Approved</th>
-                    <th class="px-4 py-3 text-right font-bold text-emerald-700">Subtotal</th>
+                    <th class="px-4 py-3 text-right bg-violet-50/30 text-violet-700">H. Modal</th>
+                    <th class="px-4 py-3 text-right bg-violet-50/30 text-violet-700">T. Modal</th>
+                    <th class="px-4 py-3 text-right bg-emerald-50/30 text-emerald-700">H. Jual</th>
+                    <th class="px-4 py-3 text-right bg-emerald-50/30 text-emerald-700">T. Jual</th>
+                    <th class="px-4 py-3 text-right bg-indigo-50/30 text-indigo-700">Profit</th>
+                    <th class="px-4 py-3 text-right bg-indigo-50/30 text-indigo-700">Margin %</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -406,25 +453,40 @@ function closeImageViewer() {
                     <td class="px-4 py-3 text-center text-slate-500">
                       {{ item.satuan }}
                     </td>
-                    <td class="px-4 py-3 text-right text-slate-500">
-                      Rp {{ formatCurrency(item.harga_estimasi) }}
+                    <td class="px-4 py-3 text-right text-violet-700 bg-violet-50/10">
+                      <span v-if="item.harga_modal !== null && item.harga_modal !== undefined">Rp {{ formatCurrency(item.harga_modal) }}</span>
+                      <span v-else class="text-slate-300 text-xs">-</span>
                     </td>
-                    <td class="px-4 py-3 text-right bg-indigo-50/10 border-l border-indigo-50">
-                       <div v-if="!isHistory">
+                    <td class="px-4 py-3 text-right text-violet-700 font-semibold bg-violet-50/10">
+                      <span v-if="item.total_modal !== null && item.total_modal !== undefined">Rp {{ formatCurrency(item.total_modal) }}</span>
+                      <span v-else class="text-slate-300 text-xs">-</span>
+                    </td>
+                    <td class="px-4 py-3 text-right text-emerald-700 bg-emerald-50/10">
+                      <!-- Editable for Pending, Read-only for History -->
+                      <div v-if="!isHistory" class="flex justify-end">
                         <input 
-                          v-model="item.harga_approved_input"
-                          @input="updateApprovedPrice(item)"
+                          v-model="item.harga_jual_input"
+                          @input="updateHargaJual(item)"
                           type="text"
-                          class="w-full text-right bg-transparent border-b border-slate-300 focus:border-emerald-500 focus:outline-none p-1 font-bold text-slate-800 transition-colors placeholder-slate-300 text-xs"
+                          class="w-24 text-right bg-white border border-emerald-200 rounded px-2 py-1 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none font-semibold text-emerald-700 transition-colors"
                           placeholder="0"
                         />
                       </div>
-                      <div v-else class="font-bold text-slate-800">
-                        Rp {{ formatCurrency(item.harga_approved || 0) }}
-                      </div>
+                      <span v-else class="font-semibold">
+                        Rp {{ formatCurrency(item.harga_jual || 0) }}
+                      </span>
                     </td>
-                    <td class="px-4 py-3 text-right font-bold text-emerald-600">
-                      Rp {{ formatCurrency(isHistory ? (item.subtotal_approved || 0) : getApprovedSubtotal(item)) }}
+                    <td class="px-4 py-3 text-right text-emerald-700 font-semibold bg-emerald-50/10">
+                      <span v-if="item.total_harga_jual !== null && item.total_harga_jual !== undefined">Rp {{ formatCurrency(item.total_harga_jual) }}</span>
+                      <span v-else class="text-slate-300 text-xs">-</span>
+                    </td>
+                    <td class="px-4 py-3 text-right text-indigo-700 font-bold bg-indigo-50/10">
+                      <span v-if="item.profit !== null && item.profit !== undefined">Rp {{ formatCurrency(item.profit) }}</span>
+                      <span v-else class="text-slate-300 text-xs">-</span>
+                    </td>
+                    <td class="px-4 py-3 text-right text-indigo-700 font-bold bg-indigo-50/10">
+                      <span v-if="item.margin !== null && item.margin !== undefined">{{ Number(item.margin).toFixed(1) }}%</span>
+                      <span v-else class="text-slate-300 text-xs">-</span>
                     </td>
                   </tr>
                 </tbody>
@@ -450,19 +512,29 @@ function closeImageViewer() {
                 </div>
                </div>
 
-               <!-- Right: Totals -->
-               <div class="bg-indigo-50/30 rounded-xl border border-indigo-100 p-4">
-                 <div class="flex justify-between items-center mb-2">
-                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Approved</span>
+               <!-- Right: Profit Summary -->
+               <div class="bg-gradient-to-br from-indigo-50 to-violet-50 rounded-xl border border-indigo-100 p-4 space-y-3">
+                 <div class="flex justify-between items-center pb-2 border-b border-indigo-100/50">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Profit</span>
                     <span class="text-xl font-bold text-indigo-700">
-                      Rp {{ formatCurrency(isHistory ? (po.total_approved || 0) : getTotalApproved(po)) }}
+                      Rp {{ formatCurrency(getTotalProfit(po)) }}
                     </span>
                  </div>
-                 <div class="flex justify-between items-center opacity-60">
-                    <span class="text-[10px] font-medium text-slate-500">Estimasi Awal</span>
-                    <span class="text-[10px] font-medium text-slate-500 decoration-slate-400 line-through">
-                      Rp {{ formatCurrency(po.total_estimasi) }}
+                 <div class="flex justify-between items-center">
+                    <span class="text-xs font-medium text-slate-500">Rata-rata Margin</span>
+                    <span class="text-lg font-bold" :class="getAverageMargin(po) >= 20 ? 'text-emerald-600' : 'text-amber-600'">
+                      {{ getAverageMargin(po) > 0 ? getAverageMargin(po).toFixed(1) + '%' : '-' }}
                     </span>
+                 </div>
+                 <div class="grid grid-cols-2 gap-2 pt-2 border-t border-indigo-100/50">
+                   <div class="text-center">
+                     <span class="text-[9px] text-slate-400 uppercase block">T. Modal</span>
+                     <span class="text-xs font-bold text-violet-600">Rp {{ formatCurrency(getTotalModal(po)) }}</span>
+                   </div>
+                   <div class="text-center">
+                     <span class="text-[9px] text-slate-400 uppercase block">T. Jual</span>
+                     <span class="text-xs font-bold text-emerald-600">Rp {{ formatCurrency(getTotalJual(po)) }}</span>
+                   </div>
                  </div>
                </div>
              </div>
@@ -483,6 +555,8 @@ function closeImageViewer() {
                 </button>
              </div>
 
+            </div>
+            </div>
           </div>
         </div>
       </div>

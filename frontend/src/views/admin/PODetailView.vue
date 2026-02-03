@@ -18,36 +18,40 @@ const currentImageIndex = ref(0);
 const currentImageUrl = ref('');
 const totalImages = ref(0);
 
-// Computed properties for conditional sections
-const showApprovedPrices = computed(() => {
-  return po.value && ['APPROVED', 'APPROVED_KEUANGAN', 'DANA_DITRANSFER', 'BELANJA_SELESAI', 'CLOSED'].includes(po.value.status);
-});
-
 const showRealPrices = computed(() => {
   return po.value && ['BELANJA_SELESAI', 'CLOSED'].includes(po.value.status);
 });
-
-
 
 const totalQty = computed(() => {
   if (!po.value || !po.value.items) return 0;
   return po.value.items.reduce((sum, item) => sum + (Number(item.qty_estimasi) || 0), 0);
 });
 
-const totalHargaEstimasi = computed(() => {
+
+// Profit Analysis Totals
+const totalModal = computed(() => {
   if (!po.value || !po.value.items) return 0;
-  return po.value.items.reduce((sum, item) => sum + (Number(item.harga_estimasi) || 0), 0);
+  return po.value.items.reduce((sum, item) => sum + (Number(item.total_modal) || 0), 0);
 });
 
-const totalHargaApproved = computed(() => {
+const totalJual = computed(() => {
   if (!po.value || !po.value.items) return 0;
-  return po.value.items.reduce((sum, item) => sum + (Number(item.harga_approved) || 0), 0);
+  return po.value.items.reduce((sum, item) => sum + (Number(item.total_harga_jual) || 0), 0);
 });
 
-const totalHargaReal = computed(() => {
+const totalProfit = computed(() => {
   if (!po.value || !po.value.items) return 0;
-  return po.value.items.reduce((sum, item) => sum + (Number(item.harga_real) || 0), 0);
+  return po.value.items.reduce((sum, item) => sum + (Number(item.profit) || 0), 0);
 });
+
+const averageMargin = computed(() => {
+  if (!po.value || !po.value.items) return 0;
+  const itemsWithMargin = po.value.items.filter(item => item.margin);
+  if (itemsWithMargin.length === 0) return 0;
+  const totalMargin = itemsWithMargin.reduce((sum, item) => sum + (Number(item.margin) || 0), 0);
+  return totalMargin / itemsWithMargin.length;
+});
+
 
 
 onMounted(() => {
@@ -112,13 +116,7 @@ function exportToPDF() {
   doc.text(`Dibuat Oleh: ${po.value.created_by_name}`, 14, 40);
 
   // Table Headers
-  const headers = [['Item', 'Qty', 'Satuan', 'Harga Est']];
-  if (showApprovedPrices.value) headers[0].push('Harga App');
-  if (showRealPrices.value) headers[0].push('Harga Real', 'Deviasi');
-  
-  headers[0].push('Subtotal Est');
-  if (showApprovedPrices.value) headers[0].push('Subtotal App');
-  if (showRealPrices.value) headers[0].push('Subtotal Real');
+  const headers = [['Item', 'Qty', 'Satuan', 'H. Modal', 'T. Modal', 'H. Jual', 'T. Jual', 'Profit', 'Margin %']];
 
   // Table Rows
   const rows = po.value.items.map((item: any) => {
@@ -126,34 +124,29 @@ function exportToPDF() {
       item.nama_barang,
       formatQty(item.qty_estimasi),
       item.satuan,
-      formatCurrency(item.harga_estimasi)
+      formatCurrency(item.harga_modal || 0),
+      formatCurrency(item.total_modal || 0),
+      formatCurrency(item.harga_jual || 0),
+      formatCurrency(item.total_harga_jual || 0),
+      formatCurrency(item.profit || 0),
+      item.margin ? Number(item.margin).toFixed(1) + '%' : '-'
     ];
-
-    if (showApprovedPrices.value) row.push(formatCurrency(item.harga_approved || 0));
-    if (showRealPrices.value) {
-      row.push(formatCurrency(item.harga_real || 0));
-      row.push(formatDeviation(item.harga_real, item.harga_approved).replace('Rp ', ''));
-    }
-
-    row.push(formatCurrency(item.subtotal_estimasi));
-    if (showApprovedPrices.value) row.push(formatCurrency(item.subtotal_approved || 0));
-    if (showRealPrices.value) row.push(formatCurrency((item.qty_estimasi || 0) * (item.harga_real || 0)));
 
     return row;
   });
 
   // Totals Row
-  const totalRow = ['TOTAL', formatQty(totalQty.value), '-', formatCurrency(totalHargaEstimasi.value)];
-  if (showApprovedPrices.value) totalRow.push(formatCurrency(totalHargaApproved.value));
-  if (showRealPrices.value) {
-    totalRow.push(formatCurrency(totalHargaReal.value));
-     const devTotal = formatDeviation(po.value.total_real || 0, po.value.total_approved || 0).replace('Rp ', '');
-     totalRow.push(devTotal);
-  }
-  
-  totalRow.push(formatCurrency(po.value.total_estimasi));
-  if (showApprovedPrices.value) totalRow.push(formatCurrency(po.value.total_approved || 0));
-  if (showRealPrices.value) totalRow.push(formatCurrency(po.value.total_real || 0));
+  const totalRow = [
+    'TOTAL', 
+    formatQty(totalQty.value), 
+    '-', 
+    '-',
+    formatCurrency(totalModal.value),
+    '-',
+    formatCurrency(totalJual.value),
+    formatCurrency(totalProfit.value),
+    averageMargin.value > 0 ? averageMargin.value.toFixed(1) + '%' : '-'
+  ];
 
   rows.push(totalRow);
 
@@ -287,19 +280,6 @@ function getStatusLabel(status: string) {
   };
   return labelMap[status] || status;
 }
-
-function formatDeviation(real: number, approved: number) {
-  const diff = (approved || 0) - (real || 0);
-  const prefix = diff > 0 ? '+' : (diff < 0 ? '-' : '');
-  return `Rp ${prefix}${formatCurrency(Math.abs(diff))}`;
-}
-
-function getDeviationClass(real: number, approved: number) {
-  const diff = (approved || 0) - (real || 0);
-  if (diff < 0) return 'text-red-600'; // Over budget (Real > Approved) -> Negative Diff -> Red
-  if (diff > 0) return 'text-green-600'; // Under budget (Real < Approved) -> Positive Diff -> Green
-  return 'text-neutral-500';
-}
 </script>
 
 <template>
@@ -368,13 +348,14 @@ function getDeviationClass(real: number, approved: number) {
                   <th class="p-3 text-left font-bold text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-200">Barang</th>
                   <th class="p-3 text-right font-bold text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-200">Qty</th>
                   <th class="p-3 text-left font-bold text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-200">Sat</th>
-                  <th class="p-3 text-right font-bold text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-200">H. Est</th>
-                  <th v-if="showApprovedPrices" class="p-3 text-right font-bold text-[11px] text-emerald-600 uppercase tracking-wider border-b border-emerald-100 bg-emerald-50/30">H. App</th>
-                  <th v-if="showRealPrices" class="p-3 text-right font-bold text-[11px] text-sky-600 uppercase tracking-wider border-b border-sky-100 bg-sky-50/30">H. Real</th>
-                  <th class="p-3 text-right font-bold text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-200">Subtotal</th>
-                  <th v-if="showApprovedPrices" class="p-3 text-right font-bold text-[11px] text-emerald-600 uppercase tracking-wider border-b border-emerald-100 bg-emerald-50/30">Sub. App</th>
-                  <th v-if="showRealPrices" class="p-3 text-right font-bold text-[11px] text-sky-600 uppercase tracking-wider border-b border-sky-100 bg-sky-50/30">Sub. Real</th>
-                  <th v-if="showRealPrices" class="p-3 text-right font-bold text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-200">Deviasi</th>
+                  
+                  <!-- Profit Analysis Columns -->
+                  <th class="p-3 text-right font-bold text-[11px] text-violet-600 uppercase tracking-wider border-b border-violet-100 bg-violet-50/30">H. Modal</th>
+                  <th class="p-3 text-right font-bold text-[11px] text-violet-600 uppercase tracking-wider border-b border-violet-100 bg-violet-50/30">T. Modal</th>
+                  <th class="p-3 text-right font-bold text-[11px] text-emerald-600 uppercase tracking-wider border-b border-emerald-100 bg-emerald-50/30">H. Jual</th>
+                  <th class="p-3 text-right font-bold text-[11px] text-emerald-600 uppercase tracking-wider border-b border-emerald-100 bg-emerald-50/30">T. Jual</th>
+                  <th class="p-3 text-right font-bold text-[11px] text-indigo-600 uppercase tracking-wider border-b border-indigo-100 bg-indigo-50/30">Profit</th>
+                  <th class="p-3 text-right font-bold text-[11px] text-indigo-600 uppercase tracking-wider border-b border-indigo-100 bg-indigo-50/30">Margin %</th>
                   <th v-if="showRealPrices" class="p-3 text-center font-bold text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-200 w-16">TF</th>
                   <th v-if="showRealPrices" class="p-3 text-center font-bold text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-200 w-16">BB</th>
                 </tr>
@@ -387,22 +368,31 @@ function getDeviationClass(real: number, approved: number) {
                   </td>
                   <td class="p-3 text-right text-slate-700">{{ formatQty(item.qty_estimasi) }}</td>
                   <td class="p-3 text-slate-500 text-xs">{{ item.satuan }}</td>
-                  <td class="p-3 text-right text-slate-600">Rp {{ formatCurrency(item.harga_estimasi) }}</td>
-                  <td v-if="showApprovedPrices" class="p-3 text-right text-emerald-700 font-medium bg-emerald-50/10">
-                    Rp {{ formatCurrency(item.harga_approved || 0) }}
+                  
+                  <!-- Profit Analysis Cells -->
+                  <td class="p-3 text-right text-violet-700 font-medium bg-violet-50/10">
+                    <span v-if="item.harga_modal !== null && item.harga_modal !== undefined">Rp {{ formatCurrency(item.harga_modal) }}</span>
+                    <span v-else class="text-slate-300 text-xs">-</span>
                   </td>
-                  <td v-if="showRealPrices" class="p-3 text-right text-sky-700 font-medium bg-sky-50/10">
-                    Rp {{ formatCurrency(item.harga_real || 0) }}
+                  <td class="p-3 text-right text-violet-700 font-semibold bg-violet-50/10">
+                    <span v-if="item.total_modal !== null && item.total_modal !== undefined">Rp {{ formatCurrency(item.total_modal) }}</span>
+                    <span v-else class="text-slate-300 text-xs">-</span>
                   </td>
-                  <td class="p-3 text-right text-slate-800 font-semibold">Rp {{ formatCurrency(item.subtotal_estimasi) }}</td>
-                  <td v-if="showApprovedPrices" class="p-3 text-right text-emerald-700 font-bold bg-emerald-50/10">
-                    Rp {{ formatCurrency(item.subtotal_approved || 0) }}
+                  <td class="p-3 text-right text-emerald-700 font-medium bg-emerald-50/10">
+                    <span v-if="item.harga_jual !== null && item.harga_jual !== undefined">Rp {{ formatCurrency(item.harga_jual) }}</span>
+                    <span v-else class="text-slate-300 text-xs">-</span>
                   </td>
-                  <td v-if="showRealPrices" class="p-3 text-right text-sky-700 font-bold bg-sky-50/10">
-                    Rp {{ formatCurrency((item.qty_estimasi || 0) * (item.harga_real || 0)) }}
+                  <td class="p-3 text-right text-emerald-700 font-semibold bg-emerald-50/10">
+                    <span v-if="item.total_harga_jual !== null && item.total_harga_jual !== undefined">Rp {{ formatCurrency(item.total_harga_jual) }}</span>
+                    <span v-else class="text-slate-300 text-xs">-</span>
                   </td>
-                  <td v-if="showRealPrices" class="p-3 text-right font-bold text-xs" :class="getDeviationClass((item.qty_estimasi || 0) * (item.harga_real || 0), item.subtotal_approved || ((item.qty_estimasi || 0) * (item.harga_approved || 0)))">
-                    {{ formatDeviation((item.qty_estimasi || 0) * (item.harga_real || 0), item.subtotal_approved || ((item.qty_estimasi || 0) * (item.harga_approved || 0))) }}
+                  <td class="p-3 text-right text-indigo-700 font-bold bg-indigo-50/10">
+                    <span v-if="item.profit !== null && item.profit !== undefined">Rp {{ formatCurrency(item.profit) }}</span>
+                    <span v-else class="text-slate-300 text-xs">-</span>
+                  </td>
+                  <td class="p-3 text-right text-indigo-700 font-bold bg-indigo-50/10">
+                    <span v-if="item.margin !== null && item.margin !== undefined">{{ Number(item.margin).toFixed(1) }}%</span>
+                    <span v-else class="text-slate-300 text-xs">-</span>
                   </td>
                   <td v-if="showRealPrices" class="p-3 text-center">
                        <div v-if="item.transfer_id && po.transfers">
@@ -432,20 +422,51 @@ function getDeviationClass(real: number, approved: number) {
               </tbody>
               <tfoot class="border-t border-slate-200 bg-slate-50">
                 <tr>
-                  <td class="p-4 text-slate-500 text-xs font-bold uppercase tracking-wider text-right" colspan="4">Total</td>
-                  <td v-if="showApprovedPrices" class="p-3 text-right font-bold text-emerald-600 bg-emerald-50/30 border-t border-emerald-100" colspan="1"></td>
-                  <td v-if="showRealPrices" class="p-3 text-right font-bold text-sky-600 bg-sky-50/30 border-t border-sky-100" colspan="1"></td>
-                  <td class="p-4 text-slate-800 text-base font-bold text-right">Rp {{ formatCurrency(po.total_estimasi) }}</td>
-                  <td v-if="showApprovedPrices" class="p-4 text-base font-bold text-right text-emerald-700 bg-emerald-50/30 border-t border-emerald-100">
-                    Rp {{ formatCurrency(po.total_approved || 0) }}
+                  <td class="p-3 text-slate-600 text-xs font-bold uppercase tracking-wider text-right" colspan="3">Subtotal Modal</td>
+                  
+                  <!-- Profit Analysis Totals -->
+                  <td class="p-3 text-sm font-semibold text-right text-violet-700 bg-violet-50/30" colspan="2">
+                    <span v-if="totalModal > 0">Rp {{ formatCurrency(totalModal) }}</span>
+                    <span v-else class="text-slate-300 text-sm">-</span>
                   </td>
-                  <td v-if="showRealPrices" class="p-4 text-base font-bold text-right text-sky-700 bg-sky-50/30 border-t border-sky-100">
-                    Rp {{ formatCurrency(po.total_real || 0) }}
+                  <td colspan="20"></td>
+                </tr>
+                
+                <!-- Subtotal Jual Row -->
+                <tr class="border-b border-slate-200">
+                  <td class="p-3 text-slate-600 text-xs font-bold uppercase tracking-wider text-right" colspan="3">Subtotal Jual</td>
+                  <td colspan="2"></td>
+                  <td class="p-3 text-sm font-semibold text-right text-emerald-700 bg-emerald-50/30" colspan="2">
+                    <span v-if="totalJual > 0">Rp {{ formatCurrency(totalJual) }}</span>
+                    <span v-else class="text-slate-300 text-sm">-</span>
                   </td>
-                   <td v-if="showRealPrices" class="p-4 text-xs font-bold text-right" :class="getDeviationClass(po.total_real || 0, po.total_approved || 0)">
-                    {{ formatDeviation(po.total_real || 0, po.total_approved || 0) }}
+                  <td colspan="20"></td>
+                </tr>
+                
+                <!-- Total Profit Row -->
+                <tr class="border-b border-slate-200">
+                  <td class="p-3 text-slate-600 text-xs font-bold uppercase tracking-wider text-right" colspan="3">Total Profit</td>
+                  <td colspan="4"></td>
+                  <td class="p-3 text-base font-bold text-right text-indigo-700 bg-indigo-50/30" colspan="2">
+                    <span v-if="totalProfit !== null && totalProfit !== undefined">Rp {{ formatCurrency(totalProfit) }}</span>
+                    <span v-else class="text-slate-300 text-sm">-</span>
                   </td>
-                  <td v-if="showRealPrices" class="bg-slate-50 border-t border-slate-200" colspan="2"></td>
+                  <td colspan="20"></td>
+                </tr>
+                
+                <!-- Average Margin Row -->
+                <tr class="bg-slate-100 border-b-2 border-slate-300">
+                  <td class="p-4 text-slate-700 text-sm font-bold uppercase tracking-wider text-right" colspan="3">
+                    📊 Rata-rata Margin
+                  </td>
+                  <td colspan="4"></td>
+                  <td class="p-4 text-xl font-bold text-right bg-indigo-50/50" colspan="2">
+                    <span v-if="averageMargin > 0" :class="averageMargin >= 20 ? 'text-emerald-600' : 'text-amber-600'">
+                      {{ averageMargin.toFixed(1) }}%
+                    </span>
+                    <span v-else class="text-slate-300">-</span>
+                  </td>
+                  <td colspan="20"></td>
                 </tr>
               </tfoot>
             </table>

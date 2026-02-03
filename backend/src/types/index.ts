@@ -89,6 +89,16 @@ export interface POItem {
   harga_real?: number;
   subtotal_real?: number;
   selisih_persen?: number;
+  
+  // Profit Analysis Fields
+  estimasi_susut?: number;
+  harga_modal?: number;
+  total_modal?: number;
+  harga_jual?: number;
+  total_harga_jual?: number;
+  profit?: number;
+  margin?: number;
+  
   created_at: Date;
   updated_at: Date;
 }
@@ -159,6 +169,15 @@ export interface CreatePORequest {
     qty_estimasi: number;
     satuan: string;
     harga_estimasi: number;
+    
+    // Profit Analysis Fields
+    estimasi_susut?: number;
+    harga_modal?: number;
+    total_modal?: number;
+    harga_jual?: number;
+    total_harga_jual?: number;
+    profit?: number;
+    margin?: number;
   }[];
   catatan_admin?: string;
 }

@@ -36,7 +36,7 @@ function isItemActive(item: MenuItem) {
       return route.query.tab === itemQuery.get('tab');
     }
   } else {
-    if (route.path === '/approval' || route.path === '/keuangan' || route.path === '/shopping') {
+    if (route.path === '/approval' || route.path === '/transfer' || route.path === '/shopping') {
        if (route.query.tab === 'history') return false;
     }
   }
@@ -77,8 +77,8 @@ const menus: Record<string, MenuEntry[]> = {
   KEUANGAN: [
     { type: 'item', label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
     { type: 'group', label: 'Finance' },
-    { type: 'item', label: 'Transfer Dana', path: '/keuangan', icon: Send },
-    { type: 'item', label: 'Riwayat Transfer', path: '/keuangan?tab=history', icon: History },
+    { type: 'item', label: 'Transfer Dana', path: '/transfer', icon: Send },
+    { type: 'item', label: 'Riwayat Transfer', path: '/transfer?tab=history', icon: History },
     { type: 'item', label: 'Laporan', path: '/reports', icon: BarChart3 },
   ],
   LAPANGAN: [

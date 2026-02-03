@@ -70,15 +70,23 @@ router.post(
         for (const item of poData.items) {
           await conn.execute(
             `INSERT INTO po_items 
-            (po_id, nama_barang, kategori_sayuran, qty_estimasi, satuan, harga_estimasi)
-            VALUES (?, ?, ?, ?, ?, ?)`,
+            (po_id, nama_barang, kategori_sayuran, qty_estimasi, satuan, harga_estimasi, 
+             estimasi_susut, harga_modal, total_modal, harga_jual, total_harga_jual, profit, margin)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               poId,
               item.nama_barang,
               item.kategori_sayuran || null,
               item.qty_estimasi,
               item.satuan,
-              item.harga_estimasi
+              item.harga_estimasi,
+              item.estimasi_susut || null,
+              item.harga_modal || null,
+              item.total_modal || null,
+              item.harga_jual || null,
+              item.total_harga_jual || null,
+              item.profit || null,
+              item.margin || null
             ]
           );
         }

@@ -33,7 +33,16 @@ export const createPOSchema = z.object({
     kategori_sayuran: z.string().optional(),
     qty_estimasi: z.number().positive('Qty harus lebih dari 0'),
     satuan: z.string().min(1, 'Satuan wajib diisi'),
-    harga_estimasi: z.number().positive('Harga harus lebih dari 0')
+    harga_estimasi: z.number().positive('Harga harus lebih dari 0'),
+    
+    // Profit Analysis Fields (Optional)
+    estimasi_susut: z.number().optional(),
+    harga_modal: z.number().optional(),
+    total_modal: z.number().optional(),
+    harga_jual: z.number().optional(),
+    total_harga_jual: z.number().optional(),
+    profit: z.number().optional(),
+    margin: z.number().optional()
   })).min(1, 'Minimal 1 item diperlukan'),
   catatan_admin: z.string().optional()
 });

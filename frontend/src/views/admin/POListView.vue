@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
-        <h1 class="m-0 text-2xl md:text-3xl font-bold text-slate-800 tracking-tight">Daftar Purchase Orders</h1>
-        <p class="m-0 mt-1 text-slate-500 font-medium">Kelola dan pantau status pengajuan PO.</p>
+        <h1 class="m-0 text-2xl md:text-3xl font-bold text-slate-800 tracking-tight">📋 Daftar Penawaran Harga PO</h1>
+        <p class="m-0 mt-1 text-slate-500 font-medium">Kelola penawaran harga dan pantau status pengajuan Purchase Order.</p>
       </div>
       <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
         <!-- Search Bar -->
@@ -25,7 +25,7 @@
         </div>
 
         <router-link v-if="authStore.userRole === 'ADMIN'" to="/po/create" class="flex items-center justify-center gap-2 py-3 px-6 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 hover:-translate-y-0.5 active:translate-y-0 no-underline whitespace-nowrap">
-          <span class="text-xl leading-none font-light">+</span> <span>Buat PO</span>
+          <span class="text-xl leading-none font-light">+</span> <span>Buat Penawaran</span>
         </router-link>
       </div>
     </div>
@@ -40,13 +40,13 @@
     <div v-else-if="pos.length === 0" class="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-300">
       <div v-if="searchQuery" class="mb-4 text-4xl">🔍</div>
       <div v-else class="text-5xl mb-4">📝</div>
-      <h3 class="text-lg font-bold text-slate-800 mb-2">{{ searchQuery ? 'Tidak ditemukan' : 'Belum ada Purchase Order' }}</h3>
-      <p class="text-slate-500 max-w-md mx-auto mb-6">{{ searchQuery ? `Tidak ada PO dengan nomor "${searchQuery}"` : 'Mulai buat pengajuan PO baru untuk supplier sayuran.' }}</p>
+      <h3 class="text-lg font-bold text-slate-800 mb-2">{{ searchQuery ? 'Tidak ditemukan' : 'Belum ada Penawaran Harga' }}</h3>
+      <p class="text-slate-500 max-w-md mx-auto mb-6">{{ searchQuery ? 'Tidak ada PO dengan nomor ' + searchQuery : 'Mulai buat penawaran harga PO untuk supplier sayuran.' }}</p>
       <button v-if="searchQuery" @click="clearSearch" class="inline-flex items-center gap-2 px-6 py-2.5 bg-slate-50 text-slate-700 font-bold rounded-xl hover:bg-slate-100 transition-colors">
         Reset Pencarian
       </button>
       <router-link v-else-if="authStore.userRole === 'ADMIN'" to="/po/create" class="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 text-emerald-700 font-bold rounded-xl hover:bg-emerald-100 transition-colors no-underline">
-        Buat PO Sekarang
+        Buat Penawaran Sekarang
       </router-link>
     </div>
 
@@ -78,17 +78,20 @@
             }"
           >{{ po.status.replace('_', ' ') }}</span>
         </div>
-
         <!-- Card Body -->
         <div class="p-4 pt-2 flex-1">
-          <div class="flex justify-between items-end p-2.5 bg-slate-50/50 rounded-xl border border-slate-100">
-            <div>
-              <p class="text-[9px] uppercase font-bold text-slate-400 tracking-wider mb-1">Total Harga Real</p>
-              <p class="text-xs font-bold text-emerald-700">Rp {{ formatCurrency(po.total_real || po.total_estimasi) }}</p>
+          <div class="flex flex-col gap-2">
+            <!-- Total Estimasi -->
+            <div class="p-3 bg-gradient-to-br from-emerald-50 to-emerald-50/30 rounded-xl border border-emerald-100">
+              <p class="text-[9px] uppercase font-bold text-emerald-600 tracking-wider mb-1">Total Estimasi</p>
+              <p class="text-lg font-bold text-emerald-700">Rp {{ formatCurrency(po.total_estimasi || 0) }}</p>
             </div>
-            <!-- Arrow icon that moves on hover -->
-            <div class="w-8 h-8 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-600 group-hover:border-emerald-100 transition-all">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:translate-x-0.5 transition-transform"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+
+            <!-- Info Note -->
+            <div class="p-2.5 bg-slate-50/80 rounded-lg border border-slate-100">
+              <p class="text-[10px] text-slate-500 text-center">
+                💡 Klik untuk detail profit & margin
+              </p>
             </div>
           </div>
         </div>
@@ -100,7 +103,7 @@
               @click="submitPO(po.id)" 
               class="flex-1 py-2.5 px-3 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-200"
             >
-              Submit Approval
+              Ajukan ke Manajer
             </button>
             <button 
               @click="router.push(`/po/${po.id}`)" 
@@ -232,8 +235,8 @@ function prevPage() {
 
 async function submitPO(poId: number) {
   const result = await Swal.fire({
-    title: 'Submit PO?',
-    text: "PO akan dikirim ke Manajer untuk review.",
+    title: 'Ajukan Penawaran?',
+    text: "Penawaran harga akan dikirim ke Manajer untuk review dan approval.",
     icon: 'question',
     showCancelButton: true,
     confirmButtonColor: '#10b981', // Emerald-500
@@ -260,7 +263,7 @@ async function submitPO(poId: number) {
     if (response.data.success) {
       await Swal.fire({
         title: 'Berhasil!',
-        text: 'PO telah disubmit untuk approval.',
+        text: 'Penawaran harga telah diajukan ke Manajer untuk approval.',
         icon: 'success',
         confirmButtonColor: '#10b981',
         timer: 2000,

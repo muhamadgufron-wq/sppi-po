@@ -84,7 +84,16 @@ export interface POItem {
   subtotal_real?: number;
   selisih_persen?: number;
   bukti_foto?: string;
-  transfer_id?: number; // Added
+  transfer_id?: number;
+  
+  // Profit Analysis Fields
+  estimasi_susut?: number;
+  harga_modal?: number;
+  total_modal?: number;
+  harga_jual?: number;
+  total_harga_jual?: number;
+  profit?: number;
+  margin?: number;
 }
 
 export interface Transfer {
@@ -124,6 +133,10 @@ export interface CreatePORequest {
     qty_estimasi: number;
     satuan: string;
     harga_estimasi: number;
+    // New fields
+    estimasi_susut?: number;
+    harga_modal?: number; 
+    harga_jual?: number;
   }[];
   catatan_admin?: string;
 }

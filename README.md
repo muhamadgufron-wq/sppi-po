@@ -2,6 +2,8 @@
 
 Sistem manajemen **Purchase Order (PO)** terintegrasi untuk pengelolaan belanja sayuran dan bahan baku dapur. Sistem ini mendigitalkan seluruh alur kerja mulai dari pembuatan draft PO, persetujuan manajer, transfer dana oleh keuangan, hingga eksekusi belanja di lapangan.
 
+![SPPI Dashboard](https://via.placeholder.com/800x400?text=SPPI+System+Dashboard)
+
 ## 🌟 Fitur Unggulan
 
 - **Workflow Approval Bertingkat**: Admin -> Manajer -> Keuangan -> Lapangan.

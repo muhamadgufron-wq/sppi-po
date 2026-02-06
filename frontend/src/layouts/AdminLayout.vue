@@ -123,8 +123,8 @@ function executeLogout() {
       <!-- Logo Area -->
       <div class="h-24 flex items-center px-8 border-b border-emerald-50 bg-gradient-to-b from-white to-emerald-50/30">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-emerald-500/20">
-            S
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center">
+            <img src="/favicon.ico" alt="Logo" class="w-10 h-10" />
           </div>
           <div>
             <h1 class="m-0 text-lg font-bold text-slate-800 tracking-tight">SPPI <span class="text-emerald-600">Admin</span></h1>

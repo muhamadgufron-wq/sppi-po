@@ -11,3 +11,5 @@ frontend/dist/
 backend/node_modules/
 backend/vendor/
 backend/storage/
+
+README.md

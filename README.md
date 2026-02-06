@@ -43,7 +43,7 @@ Sistem manajemen **Purchase Order (PO)** terintegrasi untuk pengelolaan belanja 
 | **ADMIN**    | Membuat Draft PO, Mengelola Master Dapur/User, Melihat Laporan.              |
 | **MANAJER**  | Review PO, Menentukan Harga Jual, Approve/Reject PO.                         |
 | **KEUANGAN** | Melihat PO Approved, Melakukan Transfer Dana (Modal), Upload Bukti Transfer. |
-| **LAPANGAN** | Melihat Daftar Belanja, Upload Bukti Belanja & Harga Real.                   |
+| **SHOPPER** | Melihat Daftar Belanja, Upload Bukti Belanja & Harga Real.                   |
 
 ---
 
@@ -70,7 +70,7 @@ Sistem manajemen **Purchase Order (PO)** terintegrasi untuk pengelolaan belanja 
 - Keuangan bisa transfer **Partial** (sebagian item) atau **Full**.
 - Upload bukti transfer. Status item berubah menjadi `PAID`.
 
-### 4. Belanja (Lapangan)
+### 4. Belanja (Shopper)
 
 - Tim lapangan melihat item yang sudah dibayar (`PAID`).
 - Melakukan belanja dan input **Harga Real** + Upload Foto Barang.
@@ -160,5 +160,3 @@ sppi/
 
 - **Perhitungan Profit**: Profit = (Qty × Harga Jual) - (Qty × Harga Modal).
 - **Transfer**: Nominal yang ditransfer finance adalah **Total Modal**, bukan Total Jual.
-
----

@@ -153,7 +153,7 @@ async function handleLogin() {
           <!-- Demo Accounts -->
           <div class="grid grid-cols-2 gap-3">
              <div 
-               v-for="(role, i) in ['admin', 'manajer', 'keuangan', 'lapangan']" :key="i"
+               v-for="(role, i) in ['admin', 'manajer', 'keuangan', 'shopper']" :key="i"
                class="p-3 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 hover:border-emerald-200 cursor-pointer transition-all group"
                @click="fillCredentials(role, 'admin123')"
              >

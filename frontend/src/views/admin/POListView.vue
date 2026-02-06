@@ -45,9 +45,6 @@
       <button v-if="searchQuery" @click="clearSearch" class="inline-flex items-center gap-2 px-6 py-2.5 bg-slate-50 text-slate-700 font-bold rounded-xl hover:bg-slate-100 transition-colors">
         Reset Pencarian
       </button>
-      <router-link v-else-if="authStore.userRole === 'ADMIN'" to="/po/create" class="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-50 text-emerald-700 font-bold rounded-xl hover:bg-emerald-100 transition-colors no-underline">
-        Buat Penawaran Sekarang
-      </router-link>
     </div>
 
     <!-- PO List Grid -->
@@ -88,16 +85,33 @@
         <div class="p-4 pt-2 flex-1">
           <div class="flex flex-col gap-2">
             <!-- Total Estimasi -->
-            <div class="p-3 bg-gradient-to-br from-emerald-50 to-emerald-50/30 rounded-xl border border-emerald-100">
-              <p class="text-[9px] uppercase font-bold text-emerald-600 tracking-wider mb-1">Total Estimasi</p>
-              <p class="text-lg font-bold text-emerald-700">Rp {{ formatCurrency(po.total_estimasi || 0) }}</p>
-            </div>
+            <!-- Metrics Grid -->
+            <div class="grid grid-cols-2 gap-3 mb-2">
+              <!-- Total Modal -->
+              <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                <p class="text-[9px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">Total Modal</p>
+                <p class="text-xs font-bold text-slate-700">Rp {{ formatCurrency(po.total_modal_computed || 0) }}</p>
+              </div>
+              
+              <!-- Total Jual -->
+              <div class="p-2.5 bg-blue-50/50 rounded-xl border border-blue-100">
+                <p class="text-[9px] uppercase font-bold text-blue-400 tracking-wider mb-0.5">Total Jual</p>
+                <p class="text-xs font-bold text-blue-700">Rp {{ formatCurrency(po.total_jual_computed || 0) }}</p>
+              </div>
 
-            <!-- Info Note -->
-            <div class="p-2.5 bg-slate-50/80 rounded-lg border border-slate-100">
-              <p class="text-[10px] text-slate-500 text-center">
-                💡 Klik untuk detail profit & margin
-              </p>
+              <!-- Profit -->
+              <div class="p-2.5 bg-emerald-50/50 rounded-xl border border-emerald-100">
+                <p class="text-[9px] uppercase font-bold text-emerald-500 tracking-wider mb-0.5">Profit</p>
+                <p class="text-xs font-bold text-emerald-700">Rp {{ formatCurrency(po.total_profit_computed || 0) }}</p>
+              </div>
+
+              <!-- Margin -->
+              <div class="p-2.5 bg-emerald-50/50 rounded-xl border border-emerald-100">
+                 <p class="text-[9px] uppercase font-bold text-emerald-500 tracking-wider mb-0.5">Margin</p>
+                 <p class="text-xs font-bold text-emerald-700">
+                   {{ po.total_jual_computed ? Math.round(((po.total_profit_computed || 0) / po.total_jual_computed) * 100) : 0 }}%
+                 </p>
+              </div>
             </div>
           </div>
         </div>

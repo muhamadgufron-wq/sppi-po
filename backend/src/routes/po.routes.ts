@@ -118,32 +118,58 @@ router.get('/stats', authenticateToken, async (req: AuthRequest, res: Response) 
   try {
     const userId = req.user!.id;
     const userRole = req.user!.role;
+    const dateParam = req.query.date as string;
+    
+    // Default to today if no date provided
+    const targetDate = dateParam || new Date().toISOString().split('T')[0];
 
-    console.log('📊 Getting stats for user:', userId, userRole);
+    console.log('📊 Getting stats for date:', targetDate);
 
     const stats = await transaction(async (conn) => {
-      // 1. PO Hari Ini
-      const [todayResult] = await conn.execute(
+      // 1. Total PO
+      const [totalResult] = await conn.execute(
         `SELECT COUNT(*) as count FROM purchase_orders 
-         WHERE DATE(tanggal_po) = CURDATE()`
+         WHERE DATE(tanggal_po) = ?`,
+        [targetDate]
       );
       
       // 2. Menunggu Approval
       const [pendingResult] = await conn.execute(
         `SELECT COUNT(*) as count FROM purchase_orders 
-         WHERE status = 'MENUNGGU_APPROVAL'`
+         WHERE DATE(tanggal_po) = ? AND status = 'MENUNGGU_APPROVAL'`,
+        [targetDate]
       );
 
       // 3. PO Approved (Included all approved states)
       const [approvedResult] = await conn.execute(
         `SELECT COUNT(*) as count FROM purchase_orders 
-         WHERE status IN ('APPROVED', 'APPROVED_KEUANGAN', 'DANA_DITRANSFER', 'BELANJA_SELESAI', 'CLOSED')`
+         WHERE DATE(tanggal_po) = ? AND status IN ('APPROVED', 'APPROVED_KEUANGAN', 'DANA_DITRANSFER', 'BELANJA_SELESAI', 'CLOSED')`,
+        [targetDate]
+      );
+
+      // 4. Financials (Modal & Profit)
+      // Total Modal from PO table (total_estimasi)
+      const [modalResult] = await conn.execute(
+        `SELECT COALESCE(SUM(total_estimasi), 0) as total FROM purchase_orders 
+         WHERE DATE(tanggal_po) = ?`,
+        [targetDate]
+      );
+
+      // Total Profit from Items table
+      const [profitResult] = await conn.execute(
+        `SELECT COALESCE(SUM(pi.profit), 0) as total 
+         FROM po_items pi
+         JOIN purchase_orders po ON pi.po_id = po.id
+         WHERE DATE(po.tanggal_po) = ?`,
+        [targetDate]
       );
 
       return {
-        today: (todayResult as any)[0].count,
+        total: (totalResult as any)[0].count,
         pending: (pendingResult as any)[0].count,
-        approved: (approvedResult as any)[0].count
+        approved: (approvedResult as any)[0].count,
+        total_estimasi: (modalResult as any)[0].total,
+        total_profit: (profitResult as any)[0].total
       };
     });
 
@@ -233,7 +259,10 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
         d.nama_dapur,
         d.lokasi as dapur_lokasi,
         u.nama_lengkap as created_by_name,
-        m.nama_lengkap as approved_by_name
+        m.nama_lengkap as approved_by_name,
+        (SELECT SUM(total_modal) FROM po_items WHERE po_id = po.id) as total_modal_computed,
+        (SELECT SUM(total_harga_jual) FROM po_items WHERE po_id = po.id) as total_jual_computed,
+        (SELECT SUM(profit) FROM po_items WHERE po_id = po.id) as total_profit_computed
       FROM purchase_orders po
       LEFT JOIN dapurs d ON po.dapur_id = d.id
       LEFT JOIN users u ON po.created_by = u.id

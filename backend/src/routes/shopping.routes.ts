@@ -184,7 +184,7 @@ router.post('/:poId/proof', authenticateToken, authorizeRoles(UserRole.LAPANGAN)
     await transaction(async (conn) => {
       for (const file of files) {
         // Upload to Cloudinary
-        const secureUrl = await uploadToCloudinary(file.buffer, 'po_shopping_proofs');
+        const secureUrl = await uploadToCloudinary(file.buffer, 'po_shopping_proofs', file.originalname);
         
         await conn.execute(
           `INSERT INTO shopping_proofs 
@@ -268,7 +268,7 @@ router.post('/:poId/complete', authenticateToken, authorizeRoles(UserRole.LAPANG
       if (proofFile) {
           try {
             // Upload to Cloudinary
-            bukti_foto = await uploadToCloudinary(proofFile.buffer, 'po_item_proofs');
+            bukti_foto = await uploadToCloudinary(proofFile.buffer, 'po_item_proofs', proofFile.originalname);
           } catch (err) {
             console.error(`Failed to upload image for item ${item_id}:`, err);
             // Optionally throw error or continue without image

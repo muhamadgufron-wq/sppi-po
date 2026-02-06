@@ -136,7 +136,7 @@ router.post('/:poId/transfer', authenticateToken, authorizeRoles(UserRole.KEUANG
     if (req.file) {
         // Upload to Cloudinary
         const { uploadToCloudinary } = await import('../middleware/upload.js');
-        proofImage = await uploadToCloudinary(req.file.buffer, 'sppi_transfers');
+        proofImage = await uploadToCloudinary(req.file.buffer, 'sppi_transfers', req.file.originalname);
     }
 
     // Start Transaction

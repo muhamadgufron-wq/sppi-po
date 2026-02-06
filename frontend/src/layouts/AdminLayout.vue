@@ -6,8 +6,7 @@ import { useAuthStore } from '../stores/auth';
 import { 
   LayoutDashboard, 
   FilePlus, 
-  ClipboardList, 
-  BarChart3, 
+  ClipboardList,
   Clock, 
   History, 
   Send, 
@@ -67,8 +66,6 @@ const menus: Record<string, MenuEntry[]> = {
     { type: 'group', label: 'Procurement' },
     { type: 'item', label: 'Buat PO', path: '/po/create', icon: FilePlus },
     { type: 'item', label: 'Daftar PO', path: '/po', icon: ClipboardList },
-    { type: 'group', label: 'Reports' },
-    { type: 'item', label: 'Laporan', path: '/reports', icon: BarChart3 },
   ],
   MANAJER: [
     { type: 'item', label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
@@ -82,7 +79,6 @@ const menus: Record<string, MenuEntry[]> = {
     { type: 'group', label: 'Finance' },
     { type: 'item', label: 'Transfer Dana', path: '/transfer', icon: Send },
     { type: 'item', label: 'Riwayat Transfer', path: '/transfer?tab=history', icon: History },
-    { type: 'item', label: 'Laporan', path: '/reports', icon: BarChart3 },
   ],
   LAPANGAN: [
     { type: 'item', label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
@@ -97,7 +93,13 @@ const currentMenus = computed(() => {
   return role ? menus[role] || [] : [];
 });
 
+const showLogoutModal = ref(false);
+
 function handleLogout() {
+  showLogoutModal.value = true;
+}
+
+function executeLogout() {
   authStore.logout();
   router.push('/login');
 }
@@ -216,5 +218,51 @@ function handleLogout() {
       </main>
     </div>
 
+    <!-- Logout Confirmation Modal -->
+     <Transition name="fade">
+      <div v-if="showLogoutModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" @click="showLogoutModal = false"></div>
+        
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm relative z-10 overflow-hidden transform transition-all scale-100">
+           <div class="p-6 text-center">
+             <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+               <LogOut class="w-8 h-8 ml-1" />
+             </div>
+             <h3 class="text-lg font-bold text-slate-800 mb-1">Keluar Aplikasi?</h3>
+             <p class="text-sm text-slate-500">
+               Anda akan dikembalikan ke halaman login.
+             </p>
+           </div>
+           
+           <div class="grid grid-cols-2 gap-3 p-6 pt-0">
+             <button 
+               @click="showLogoutModal = false"
+               class="py-2.5 px-4 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors"
+             >
+               Batal
+             </button>
+             <button 
+               @click="executeLogout"
+               class="py-2.5 px-4 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all hover:-translate-y-0.5"
+             >
+               Ya, Keluar
+             </button>
+           </div>
+        </div>
+      </div>
+    </Transition>
+
   </div>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

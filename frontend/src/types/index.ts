@@ -71,6 +71,10 @@ export interface PurchaseOrder {
   kode_dapur?: string;
   nama_dapur?: string;
   dapur_lokasi?: string;
+  // Computed fields from list view
+  total_modal_computed?: number;
+  total_jual_computed?: number;
+  total_profit_computed?: number;
 }
 
 export interface POItem {

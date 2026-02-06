@@ -24,6 +24,13 @@ const error = ref<string | null>(null);
 const showImageViewer = ref(false);
 const currentImageUrl = ref('');
 
+// Modal States
+const showConfirmModal = ref(false);
+const activeTransferPO = ref<any>(null);
+const processingTransfer = ref(false);
+const showAmountWarning = ref(false);
+const amountDiff = ref(0);
+
 const isHistory = computed(() => router.currentRoute.value.query.tab === 'history');
 
 onMounted(() => {
@@ -153,33 +160,11 @@ function handleFileUpload(event: Event, po: any) {
   }
 }
 
-async function processTransfer(po: any) {
-  if (po.selectedItems.length === 0) {
-    alert('❌ Pilih minimal satu item untuk ditransfer');
-    return;
-  }
-  if (!po.nominal_transfer_value || po.nominal_transfer_value <= 0) {
-    alert('❌ Nominal transfer harus diisi');
-    return;
-  }
-  if (!po.tanggal_transfer_input) {
-    alert('❌ Tanggal transfer harus diisi');
-    return;
-  }
+async function executeTransfer() {
+  if (!activeTransferPO.value) return;
+  const po = activeTransferPO.value;
   
-  const totalSelected = getSelectedTotal(po);
-  const diff = Math.abs(po.nominal_transfer_value - totalSelected);
-  
-  // Warning if transfer amount differs significantly from selected items total
-  if (diff > 0) {
-     if (!confirm(`⚠️ Nominal Transfer (Rp ${formatCurrency(po.nominal_transfer_value)}) berbeda dengan Total Item Terpilih (Rp ${formatCurrency(totalSelected)}).\n\nTetap lanjutkan?`)) {
-       return;
-     }
-  }
-
-  if (!confirm(`Proses Transfer untuk ${po.selectedItems.length} item?\n\nNominal: Rp ${formatCurrency(po.nominal_transfer_value)}`)) {
-    return;
-  }
+  processingTransfer.value = true;
 
   try {
     const formData = new FormData();
@@ -198,12 +183,48 @@ async function processTransfer(po: any) {
       }
     });
 
-    alert('✅ Transfer berhasil diproses!');
+    // Close modal and reload
+    closeConfirmModal();
     await loadPOData();
+    
+    // Optional: Success modal could be added here if desired, 
+    // but reload + disappearance of pending item is usually clear feedback.
+    
   } catch (err: any) {
     console.error('Transfer error:', err);
     alert('❌ ' + (err.response?.data?.message || 'Gagal memproses transfer'));
+  } finally {
+    processingTransfer.value = false;
   }
+}
+
+function openTransferModal(po: any) {
+  if (po.selectedItems.length === 0) {
+    alert('❌ Pilih minimal satu item untuk ditransfer');
+    return;
+  }
+  if (!po.nominal_transfer_value || po.nominal_transfer_value <= 0) {
+    alert('❌ Nominal transfer harus diisi');
+    return;
+  }
+  if (!po.tanggal_transfer_input) {
+    alert('❌ Tanggal transfer harus diisi');
+    return;
+  }
+  
+  const totalSelected = getSelectedTotal(po);
+  const diff = Math.abs(po.nominal_transfer_value - totalSelected);
+  
+  amountDiff.value = diff;
+  showAmountWarning.value = diff > 0;
+  activeTransferPO.value = po;
+  showConfirmModal.value = true;
+}
+
+function closeConfirmModal() {
+  showConfirmModal.value = false;
+  activeTransferPO.value = null;
+  showAmountWarning.value = false;
 }
 
 function formatDate(date: string) {
@@ -255,6 +276,29 @@ function closeImageViewer() {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-content-enter-active {
+  transition: all 0.3s ease-out;
+}
+.modal-content-leave-active {
+  transition: all 0.2s ease-in;
+}
+
+.modal-content-enter-from,
+.modal-content-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
 }
 </style>
 
@@ -338,15 +382,6 @@ function closeImageViewer() {
                 <div>
                   <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 block md:text-right">Total Modal</span>
                   <span class="text-lg font-bold text-slate-800">Rp {{ formatCurrency(po.total_modal || 0) }}</span>
-                  <!-- New: Transfer Proof Button -->
-                   <button 
-                     v-if="po.transfers && po.transfers.length > 0 && po.transfers[0].proof_image"
-                     @click.stop="viewImage(po.transfers[0].proof_image.startsWith('http') ? po.transfers[0].proof_image : `http://localhost:3000/${po.transfers[0].proof_image}`)"
-                     class="flex items-center gap-1 text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-100 hover:bg-purple-100 transition-colors mt-1"
-                   >
-                     <FileText class="w-3 h-3" />
-                     Lihat Transfer
-                   </button>
                 </div>
                 <!-- Progress Bar / Status Text -->
                 <div class="flex items-center gap-2 mt-1">
@@ -577,7 +612,7 @@ function closeImageViewer() {
                     </div>
 
                     <button 
-                      @click="processTransfer(po)"
+                      @click="openTransferModal(po)"
                       class="w-full py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-sm rounded-lg shadow-md shadow-amber-500/20 transition-all hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2"
                     >
                       <CheckCircle2 class="w-4 h-4" /> Proses Transfer
@@ -599,5 +634,100 @@ function closeImageViewer() {
         <img :src="currentImageUrl" alt="Bukti Full" class="max-h-[85vh] max-w-full rounded-lg shadow-2xl object-contain" />
       </div>
     </div>
-  </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <Transition name="modal">
+      <div v-if="showConfirmModal && activeTransferPO" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="!processingTransfer ? closeConfirmModal() : null"></div>
+        
+        <!-- Modal Content -->
+        <Transition name="modal-content" appear>
+          <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden border border-slate-100">
+            
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-slate-50 to-white px-8 py-6 border-b border-slate-100 flex justify-between items-center">
+              <h3 class="text-lg font-bold text-slate-800">Konfirmasi Transfer</h3>
+              <button 
+                @click="closeConfirmModal" 
+                class="text-slate-400 hover:text-slate-600 transition-colors"
+                :disabled="processingTransfer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-8">
+              <div class="flex flex-col items-center mb-6">
+                <div class="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mb-4">
+                   <CreditCard class="w-8 h-8" />
+                </div>
+                <h4 class="text-xl font-bold text-slate-800 mb-1">Proses Transfer?</h4>
+                <p class="text-sm text-slate-500 text-center">
+                  Pastikan data pembayaran sudah benar.
+                </p>
+              </div>
+
+               <!-- Warning if amount differs -->
+               <div v-if="showAmountWarning" class="mb-4 bg-red-50 border border-red-100 rounded-xl p-3 flex gap-3">
+                 <AlertCircle class="w-5 h-5 text-red-500 flex-shrink-0" />
+                 <div>
+                   <p class="text-xs font-bold text-red-800 mb-1">Perbedaan Nominal!</p>
+                   <p class="text-[10px] text-red-600 leading-relaxed">
+                     Nominal transfer (Rp <span class="font-bold">{{ formatCurrency(activeTransferPO.nominal_transfer_value) }}</span>) 
+                     berbeda dengan total item terpilih (Rp <span class="font-bold">{{ formatCurrency(getSelectedTotal(activeTransferPO)) }}</span>).
+                   </p>
+                 </div>
+               </div>
+
+              <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-3">
+                <div class="flex justify-between items-center text-sm">
+                   <span class="text-slate-500 font-medium">Nomor PO</span>
+                   <span class="font-bold text-slate-800">{{ activeTransferPO.po_number }}</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                   <span class="text-slate-500 font-medium">Item Dipilih</span>
+                   <span class="font-bold text-slate-800">{{ activeTransferPO.selectedItems.length }} Item</span>
+                </div>
+                <!-- Tanggal -->
+                 <div class="flex justify-between items-center text-sm">
+                   <span class="text-slate-500 font-medium">Tanggal</span>
+                   <span class="font-bold text-slate-800">{{ formatDate(activeTransferPO.tanggal_transfer_input) }}</span>
+                </div>
+                <div class="border-t border-slate-200 mt-2 pt-2 flex justify-between items-center">
+                   <span class="text-slate-500 font-bold">Total Transfer</span>
+                   <span class="text-lg font-bold text-emerald-600">
+                     Rp {{ formatCurrency(activeTransferPO.nominal_transfer_value) }}
+                   </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="bg-slate-50 px-8 py-5 border-t border-slate-100 flex gap-3">
+               <button 
+                @click="closeConfirmModal"
+                class="flex-1 py-3 px-4 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-50"
+                :disabled="processingTransfer"
+              >
+                Batal
+              </button>
+              <button 
+                @click="executeTransfer"
+                class="flex-1 py-3 px-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-lg shadow-amber-500/20 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+                :disabled="processingTransfer"
+              >
+                <span v-if="processingTransfer" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                {{ processingTransfer ? 'Memproses...' : 'Ya, Transfer' }}
+              </button>
+            </div>
+
+          </div>
+        </Transition>
+      </div>
+    </Transition>
 </template>

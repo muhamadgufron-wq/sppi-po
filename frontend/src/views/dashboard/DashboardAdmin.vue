@@ -3,9 +3,24 @@
     <div class="max-w-[1600px] mx-auto">
       
       <!-- 1. Header Section -->
-      <div class="mb-8">
-        <h1 class="m-0 text-2xl md:text-3xl font-bold text-slate-800 tracking-tight">Halo, {{ authStore.user?.nama_lengkap || 'Admin Operasional' }}</h1>
-        <p class="m-0 mt-2 text-slate-500 font-medium">Berikut ringkasan pengadaan hari ini.</p>
+      <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 class="m-0 text-2xl md:text-3xl font-bold text-slate-800 tracking-tight">Halo, {{ authStore.user?.nama_lengkap || 'Admin Operasional' }}</h1>
+          <p class="m-0 mt-2 text-slate-500 font-medium">Berikut ringkasan purchase order pada <span class="text-slate-800 font-bold">{{ formatDate(selectedDate) }}</span>.</p>
+        </div>
+        
+        <!-- Date Filter -->
+        <div class="bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-2">
+           <div class="p-2 bg-slate-50 rounded-lg text-slate-500">
+             <Clock class="w-4 h-4" />
+           </div>
+           <input 
+             v-model="selectedDate" 
+             type="date" 
+             class="bg-transparent border-none outline-none text-sm font-bold text-slate-700 cursor-pointer pr-2"
+             @change="fetchData"
+           />
+        </div>
       </div>
 
       <!-- Main Layout Grid (Desktop: 2 Columns) -->
@@ -23,7 +38,7 @@
                   <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600">
                     <FileText class="w-5 h-5" />
                   </div>
-                  <p class="m-0 text-xs font-bold text-slate-400 uppercase tracking-wider">TOTAL PO (HARI INI)</p>
+                  <p class="m-0 text-xs font-bold text-slate-400 uppercase tracking-wider">TOTAL PO</p>
                 </div>
                 <h3 class="text-2xl md:text-3xl font-bold text-slate-800 m-0 text-right">{{ stats.total }}</h3>
               </div>
@@ -62,7 +77,7 @@
                   <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
                      <Banknote class="w-5 h-5" />
                   </div>
-                   <p class="m-0 text-xs font-bold text-slate-400 uppercase tracking-wider">EST. BIAYA</p>
+                   <p class="m-0 text-xs font-bold text-slate-400 uppercase tracking-wider">MODAL</p>
                 </div>
                 <h3 class="text-2xl md:text-3xl font-bold text-slate-800 m-0 text-right">Rp {{ formatCurrency(stats.total_estimasi) }}</h3>
               </div>
@@ -89,8 +104,32 @@
         </div>
 
         <!-- Right Column (Actions & Recent) -->
-        <div class="flex flex-col gap-8">
+        <div class="flex flex-col gap-6">
           
+          <!-- Profit Card -->
+          <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 rounded-3xl shadow-[0_10px_30px_-10px_rgba(16,185,129,0.4)] text-white relative overflow-hidden group border border-emerald-400/20">
+            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <TrendingUp class="w-24 h-24" />
+            </div>
+             <div class="relative z-10">
+               <div class="flex items-center gap-3 mb-3">
+                 <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm shadow-inner shadow-white/10">
+                   <TrendingUp class="w-5 h-5 text-white" />
+                 </div>
+                 <p class="m-0 text-xs font-bold text-emerald-100 uppercase tracking-wider">ESTIMASI KEUNTUNGAN</p>
+               </div>
+               <h3 class="text-3xl font-bold text-white m-0 tracking-tight">Rp {{ formatCurrency(stats.total_profit) }}</h3>
+               <div class="mt-3 flex items-center gap-2">
+                 <span class="text-[10px] font-bold bg-emerald-400/20 text-emerald-50 px-2 py-1 rounded-lg border border-emerald-400/20">
+                   {{ formatDate(selectedDate) }}
+                 </span>
+                 <span class="text-[10px] text-emerald-100/80">
+                   Potensi profit pada tanggal ini
+                 </span>
+               </div>
+             </div>
+          </div>
+
           <!-- 4. Quick Actions "Aksi Cepat" -->
           <div>
             <h2 class="text-lg font-bold text-slate-800 m-0 mb-4">Quick Actions</h2>
@@ -112,10 +151,12 @@
               </button>
               
               <button class="flex flex-col items-center gap-3 p-4 bg-white rounded-2xl shadow-[0_2px_15px_rgba(0,0,0,0.03)] border border-slate-50 hover:-translate-y-1 transition-transform group cursor-pointer">
+                 <a href="dapur">
                  <div class="w-12 h-12 rounded-full bg-white border-2 border-slate-100 text-slate-600 flex items-center justify-center group-hover:border-slate-300 transition-colors">
-                    <Users class="w-5 h-5" />
+                    <Store class="w-5 h-5" />
                  </div>
-                 <span class="text-xs font-bold text-slate-700">Supplier</span>
+                 <span class="text-xs font-bold text-slate-700">Dapur</span>
+                 </a>
               </button>
             </div>
           </div>
@@ -124,7 +165,7 @@
           <div class="flex-1 bg-white rounded-3xl shadow-[0_2px_20px_rgba(0,0,0,0.04)] border border-emerald-50 p-6">
             <div class="flex justify-between items-center mb-6">
               <h2 class="m-0 text-lg font-bold text-slate-800">PO Terbaru</h2>
-              <button class="text-emerald-600 font-bold text-sm hover:underline" @click="router.push('/admin/po')">Lihat Semua</button>
+              <button class="text-emerald-600 font-bold text-sm hover:underline" @click="router.push('/po')">Lihat Semua</button>
             </div>
             
             <div class="flex flex-col gap-4">
@@ -135,14 +176,14 @@
                 v-for="po in recentPOs" 
                 :key="po.id"
                 class="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer group"
-                @click="router.push(`/admin/po/${po.id}`)"
+                @click="router.push(`/po/${po.id}`)"
               >
                 <div class="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:scale-105 transition-transform">
                   <FileText class="w-6 h-6" />
                 </div>
                 <div class="flex-1">
                   <h4 class="m-0 text-sm font-bold text-slate-800">{{ po.po_number }}</h4>
-                  <p class="m-0 text-xs text-slate-500">Estimasi: Rp {{ formatFullCurrency(po.total_estimasi) }}</p>
+                  <p class="m-0 text-xs text-slate-500">Modal: Rp {{ formatFullCurrency(po.total_estimasi) }}</p>
                 </div>
                 <div class="text-right">
                   <span :class="['inline-block px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide border', getStatusClass(po.status)]">
@@ -152,10 +193,8 @@
               </div>
             </div>
           </div>
-
         </div>
       </div>
-    
     </div>
   </div>
 </template>
@@ -174,14 +213,16 @@ import {
   Banknote, 
   BarChart2, 
   ShoppingCart, 
-  List, 
-  Users 
+  List,
+  TrendingUp,
+  Store
 } from 'lucide-vue-next';
 
 const router = useRouter(); // Initialize router
 
 const authStore = useAuthStore();
-const stats = ref({ total: 0, pending: 0, approved: 0, total_estimasi: 0 });
+const selectedDate = ref(new Date().toISOString().split('T')[0]);
+const stats = ref({ total: 0, pending: 0, approved: 0, total_estimasi: 0, total_profit: 0 });
 const dailyStats = ref<{ date: string; count: number }[]>([]);
 const recentPOs = ref<any[]>([]); // To store the list for "PO Terbaru"
 const loading = ref(false);
@@ -197,48 +238,22 @@ useAutoRefresh(fetchData);
 async function fetchData() {
   loading.value = true;
   try {
-    const results = await Promise.allSettled([
-      api.get('/po'), // Fetch all/recent POs to filter client-side
-      api.get('/po/stats/daily'),
-    ]);
-
-    const [poListRes, dailyRes] = results;
-
-    // 1. Process PO List for "Today's Stats"
-    if (poListRes.status === 'fulfilled' && poListRes.value.data.success) {
-      const allPOs = poListRes.value.data.data;
-      
-      // Filter for Today
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-      const todayPOs = allPOs.filter((po: any) => {
-        const poDate = new Date(po.created_at).toISOString().split('T')[0];
-        return poDate === today;
-      });
-
-      // Calculate Stats
-      const total = todayPOs.length;
-      const pending = todayPOs.filter((po: any) => po.status === 'MENUNGGU_APPROVAL').length;
-      const approved = todayPOs.filter((po: any) => 
-        ['APPROVED', 'APPROVED_KEUANGAN', 'DANA_DITRANSFER', 'BELANJA_SELESAI', 'CLOSED'].includes(po.status)
-      ).length;
-      const total_estimasi = todayPOs.reduce((sum: number, po: any) => sum + (Number(po.total_estimasi) || 0), 0);
-
-      stats.value = {
-        total,
-        pending,
-        approved,
-        total_estimasi
-      };
-
-      recentPOs.value = allPOs.slice(0, 3);
-    } else {
-      console.error('Failed to fetch PO list');
+    // 1. Fetch Stats for Selected Date
+    const statsRes = await api.get('/po/stats', { params: { date: selectedDate.value } });
+    if (statsRes.data.success) {
+      stats.value = statsRes.data.data;
     }
-    
-    // 2. Handle Daily Chart (Last 7 Days)
-    if (dailyRes.status === 'fulfilled' && dailyRes.value.data.success) {
-      const rawData = dailyRes.value.data.data;
-      dailyStats.value = processLast7Days(rawData);
+
+    // 2. Fetch Recent POs
+    const poListRes = await api.get('/po', { params: { limit: 5 } });
+    if (poListRes.data.success) {
+      recentPOs.value = poListRes.data.data;
+    }
+
+    // 3. Fetch Daily Chart Data
+    const dailyRes = await api.get('/po/stats/daily');
+    if (dailyRes.data.success) {
+      dailyStats.value = processLast7Days(dailyRes.data.data);
     }
 
   } catch (error) {
@@ -270,12 +285,7 @@ function processLast7Days(data: { date: string; count: number }[]) {
 }
 
 function formatCurrency(amount: number) {
-  if (amount >= 1000000000) {
-    return (amount / 1000000000).toFixed(1) + 'M';
-  } else if (amount >= 1000000) {
-    return (amount / 1000000).toFixed(1) + 'Jt';
-  }
-  return amount.toLocaleString('id-ID');
+  return Math.round(amount).toLocaleString('id-ID');
 }
 
 function formatFullCurrency(amount: number) {
@@ -305,6 +315,17 @@ function getStatusLabel(status: string) {
     'CLOSED': 'Closed'
   };
   return map[status] || status;
+}
+
+function formatDate(dateString: string) {
+  if (!dateString) return '';
+  const options: Intl.DateTimeFormatOptions = { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  };
+  return new Date(dateString).toLocaleDateString('id-ID', options);
 }
 </script>
 

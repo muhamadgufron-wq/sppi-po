@@ -46,12 +46,6 @@ const router = createRouter({
       component: () => import('../views/admin/PODetailView.vue'),
       meta: { requiresAuth: true, layout: 'admin' }
     },
-    {
-      path: '/reports',
-      name: 'reports',
-      component: () => import('../views/admin/ReportsView.vue'),
-      meta: { requiresAuth: true, roles: [UserRole.ADMIN], layout: 'admin' }
-    },
     // Manajer routes
     {
       path: '/approval',

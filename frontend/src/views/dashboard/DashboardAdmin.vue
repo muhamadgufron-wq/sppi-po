@@ -1,3 +1,139 @@
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../../stores/auth';
+import { useAutoRefresh } from '../../composables/useAutoRefresh';
+import api from '../../services/api';
+import DailyPOChart from '../../components/DailyPOChart.vue';
+import { 
+  FileText, 
+  Clock, 
+  CheckCircle, 
+  Banknote, 
+  BarChart2, 
+  ShoppingCart, 
+  List,
+  TrendingUp,
+  Store
+} from 'lucide-vue-next';
+
+const router = useRouter(); // Initialize router
+
+const authStore = useAuthStore();
+const selectedDate = ref(new Date().toISOString().split('T')[0]);
+const stats = ref({ total: 0, pending: 0, approved: 0, total_estimasi: 0, total_profit: 0 });
+const dailyStats = ref<{ date: string; count: number }[]>([]);
+const recentPOs = ref<any[]>([]); // To store the list for "PO Terbaru"
+const loading = ref(false);
+
+onMounted(async () => {
+  // Always fetch data for specific dashboard
+  await fetchData();
+});
+
+// Auto-refresh every 30 seconds
+useAutoRefresh(fetchData);
+
+async function fetchData() {
+  loading.value = true;
+  try {
+    // 1. Fetch Stats for Selected Date
+    const statsRes = await api.get('/po/stats', { params: { date: selectedDate.value } });
+    if (statsRes.data.success) {
+      stats.value = statsRes.data.data;
+    }
+
+    // 2. Fetch Recent POs
+    const poListRes = await api.get('/po', { params: { limit: 5 } });
+    if (poListRes.data.success) {
+      recentPOs.value = poListRes.data.data;
+    }
+
+    // 3. Fetch Daily Chart Data
+    const dailyRes = await api.get('/po/stats/daily');
+    if (dailyRes.data.success) {
+      dailyStats.value = processLast7Days(dailyRes.data.data);
+    }
+
+  } catch (error) {
+    console.error('Unexpected error fetching dashboard data:', error);
+  } finally {
+    loading.value = false;
+  }
+}
+
+function processLast7Days(data: { date: string; count: number }[]) {
+  const result = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    
+    // Use local YYYY-MM-DD format to match user's local day
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+    
+    const found = data.find(item => item.date === dateStr);
+    result.push({
+      date: dateStr,
+      count: found ? found.count : 0
+    });
+  }
+  return result;
+}
+
+function formatCurrency(amount: number) {
+  return Math.round(amount).toLocaleString('id-ID');
+}
+
+function formatFullCurrency(amount: number) {
+  if (!amount) return '0';
+  return Math.round(amount).toLocaleString('id-ID');
+}
+
+function getStatusClass(status: string) {
+  const map: any = {
+    'APPROVED': 'bg-emerald-100 text-emerald-700',
+    'MENUNGGU_APPROVAL': 'bg-amber-100 text-amber-700',
+    'DRAFT': 'bg-slate-100 text-slate-600',
+    'REJECTED': 'bg-red-100 text-red-700'
+  };
+  return map[status] || 'bg-slate-100 text-slate-600';
+}
+
+function getStatusLabel(status: string) {
+    const map: any = {
+    'APPROVED': 'Approved',
+    'MENUNGGU_APPROVAL': 'Menunggu',
+    'DRAFT': 'Draft',
+    'REJECTED': 'Ditolak',
+    'APPROVED_KEUANGAN': 'Keuangan',
+    'DANA_DITRANSFER': 'Transfer',
+    'BELANJA_SELESAI': 'Selesai',
+    'CLOSED': 'Closed'
+  };
+  return map[status] || status;
+}
+
+function formatDate(dateString: string) {
+  if (!dateString) return '';
+  const options: Intl.DateTimeFormatOptions = { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  };
+  return new Date(dateString).toLocaleDateString('id-ID', options);
+}
+</script>
+
+<style>
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
 <template>
   <div class="animate-[fadeIn_0.5s_ease-out]">
     <div class="max-w-[1600px] mx-auto">
@@ -198,140 +334,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '../../stores/auth';
-import { useAutoRefresh } from '../../composables/useAutoRefresh';
-import api from '../../services/api';
-import DailyPOChart from '../../components/DailyPOChart.vue';
-import { 
-  FileText, 
-  Clock, 
-  CheckCircle, 
-  Banknote, 
-  BarChart2, 
-  ShoppingCart, 
-  List,
-  TrendingUp,
-  Store
-} from 'lucide-vue-next';
-
-const router = useRouter(); // Initialize router
-
-const authStore = useAuthStore();
-const selectedDate = ref(new Date().toISOString().split('T')[0]);
-const stats = ref({ total: 0, pending: 0, approved: 0, total_estimasi: 0, total_profit: 0 });
-const dailyStats = ref<{ date: string; count: number }[]>([]);
-const recentPOs = ref<any[]>([]); // To store the list for "PO Terbaru"
-const loading = ref(false);
-
-onMounted(async () => {
-  // Always fetch data for specific dashboard
-  await fetchData();
-});
-
-// Auto-refresh every 30 seconds
-useAutoRefresh(fetchData);
-
-async function fetchData() {
-  loading.value = true;
-  try {
-    // 1. Fetch Stats for Selected Date
-    const statsRes = await api.get('/po/stats', { params: { date: selectedDate.value } });
-    if (statsRes.data.success) {
-      stats.value = statsRes.data.data;
-    }
-
-    // 2. Fetch Recent POs
-    const poListRes = await api.get('/po', { params: { limit: 5 } });
-    if (poListRes.data.success) {
-      recentPOs.value = poListRes.data.data;
-    }
-
-    // 3. Fetch Daily Chart Data
-    const dailyRes = await api.get('/po/stats/daily');
-    if (dailyRes.data.success) {
-      dailyStats.value = processLast7Days(dailyRes.data.data);
-    }
-
-  } catch (error) {
-    console.error('Unexpected error fetching dashboard data:', error);
-  } finally {
-    loading.value = false;
-  }
-}
-
-function processLast7Days(data: { date: string; count: number }[]) {
-  const result = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    
-    // Use local YYYY-MM-DD format to match user's local day
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const dateStr = `${year}-${month}-${day}`;
-    
-    const found = data.find(item => item.date === dateStr);
-    result.push({
-      date: dateStr,
-      count: found ? found.count : 0
-    });
-  }
-  return result;
-}
-
-function formatCurrency(amount: number) {
-  return Math.round(amount).toLocaleString('id-ID');
-}
-
-function formatFullCurrency(amount: number) {
-  if (!amount) return '0';
-  return Math.round(amount).toLocaleString('id-ID');
-}
-
-function getStatusClass(status: string) {
-  const map: any = {
-    'APPROVED': 'bg-emerald-100 text-emerald-700',
-    'MENUNGGU_APPROVAL': 'bg-amber-100 text-amber-700',
-    'DRAFT': 'bg-slate-100 text-slate-600',
-    'REJECTED': 'bg-red-100 text-red-700'
-  };
-  return map[status] || 'bg-slate-100 text-slate-600';
-}
-
-function getStatusLabel(status: string) {
-    const map: any = {
-    'APPROVED': 'Approved',
-    'MENUNGGU_APPROVAL': 'Menunggu',
-    'DRAFT': 'Draft',
-    'REJECTED': 'Ditolak',
-    'APPROVED_KEUANGAN': 'Keuangan',
-    'DANA_DITRANSFER': 'Transfer',
-    'BELANJA_SELESAI': 'Selesai',
-    'CLOSED': 'Closed'
-  };
-  return map[status] || status;
-}
-
-function formatDate(dateString: string) {
-  if (!dateString) return '';
-  const options: Intl.DateTimeFormatOptions = { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  };
-  return new Date(dateString).toLocaleDateString('id-ID', options);
-}
-</script>
-
-<style>
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-</style>

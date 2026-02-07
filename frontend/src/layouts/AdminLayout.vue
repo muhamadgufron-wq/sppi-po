@@ -61,11 +61,11 @@ type MenuEntry = MenuGroup | MenuItem;
 const menus: Record<string, MenuEntry[]> = {
   ADMIN: [
     { type: 'item', label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
-    { type: 'group', label: 'Master Data' },
-    { type: 'item', label: 'Master Dapur', path: '/dapur', icon: Store },
     { type: 'group', label: 'Procurement' },
     { type: 'item', label: 'Buat PO', path: '/po/create', icon: FilePlus },
     { type: 'item', label: 'Daftar PO', path: '/po', icon: ClipboardList },
+    { type: 'group', label: 'Master Data' },
+    { type: 'item', label: 'Master Dapur', path: '/dapur', icon: Store },
   ],
   MANAJER: [
     { type: 'item', label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
@@ -107,14 +107,12 @@ function executeLogout() {
 
 <template>
   <div class="min-h-screen bg-[#F0FDF4] flex flex-col md:flex-row font-inter">
-    
     <!-- Mobile Sidebar Overlay -->
     <div 
       v-if="isSidebarOpen" 
       class="fixed inset-0 bg-black/40 z-40 md:hidden transition-opacity duration-300 backdrop-blur-sm"
       @click="isSidebarOpen = false"
     ></div>
-
     <!-- Sidebar -->
     <aside 
       class="fixed top-0 left-0 bottom-0 w-[280px] bg-white border-r border-emerald-100 z-50 transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:h-screen md:sticky overflow-y-auto shadow-[4px_0_24px_rgba(0,0,0,0.02)]"
@@ -128,7 +126,7 @@ function executeLogout() {
           </div>
           <div>
             <h1 class="m-0 text-lg font-bold text-slate-800 tracking-tight">SPPI <span class="text-emerald-600">Admin</span></h1>
-            <p class="m-0 text-[11px] text-slate-400 font-semibold tracking-wider uppercase">PO Sayuran Management</p>
+            <p class="m-0 text-[11px] text-slate-400 font-semibold tracking-wider uppercase">Purchase Order Management</p>
           </div>
         </div>
       </div>
@@ -251,7 +249,7 @@ function executeLogout() {
         </div>
       </div>
     </Transition>
-
+    
   </div>
 </template>
 

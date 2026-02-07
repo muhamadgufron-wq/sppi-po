@@ -132,7 +132,7 @@ function updateHargaJual(item: any) {
   
   // Margin
   if (item.total_harga_jual > 0) {
-    item.margin = (item.profit / item.total_harga_jual) * 100;
+    item.margin = Math.round((item.profit / item.total_harga_jual) * 100);
   } else {
     item.margin = 0;
   }
@@ -161,7 +161,7 @@ async function approve(po: any) {
       <div class="text-left bg-slate-50 p-4 rounded-lg border border-slate-200 mb-2">
         <p class="text-sm text-slate-500 mb-1">Total Profit:</p>
         <p class="text-2xl font-bold text-emerald-600">Rp ${formatCurrency(getTotalProfit(po))}</p>
-        <p class="text-xs text-slate-400 mt-1">Margin: ${getAverageMargin(po).toFixed(1)}%</p>
+        <p class="text-xs text-slate-400 mt-1">Margin: {{ Math.round(getAverageMargin(po)) }}%</p>
       </div>
       <p class="text-sm text-slate-500">PO akan diteruskan ke bagian Keuangan.</p>
     `,
@@ -488,7 +488,7 @@ function closeImageViewer() {
                       <span v-else class="text-slate-300 text-xs">-</span>
                     </td>
                     <td class="px-4 py-3 text-right text-indigo-700 font-bold bg-indigo-50/10">
-                      <span v-if="item.margin !== null && item.margin !== undefined">{{ Number(item.margin).toFixed(1) }}%</span>
+                      <span v-if="item.margin !== null && item.margin !== undefined">{{ Math.round(item.margin) }}%</span>
                       <span v-else class="text-slate-300 text-xs">-</span>
                     </td>
                   </tr>
@@ -526,7 +526,7 @@ function closeImageViewer() {
                  <div class="flex justify-between items-center">
                     <span class="text-xs font-medium text-slate-500">Rata-rata Margin</span>
                     <span class="text-lg font-bold" :class="getAverageMargin(po) >= 20 ? 'text-emerald-600' : 'text-amber-600'">
-                      {{ getAverageMargin(po) > 0 ? getAverageMargin(po).toFixed(1) + '%' : '-' }}
+                      {{ getAverageMargin(po) > 0 ? Math.round(getAverageMargin(po)) + '%' : '-' }}
                     </span>
                  </div>
                  <div class="grid grid-cols-2 gap-2 pt-2 border-t border-indigo-100/50">

@@ -400,7 +400,7 @@ function getStatusLabel(status: string) {
                     <span v-else class="text-slate-300 text-xs">-</span>
                   </td>
                   <td class="p-3 text-right text-indigo-700 font-bold bg-indigo-50/10">
-                    <span v-if="item.margin !== null && item.margin !== undefined">{{ Number(item.margin).toFixed(1) }}%</span>
+                    <span v-if="item.margin !== null && item.margin !== undefined">{{ Math.round(Number(item.margin)) }}%</span>
                     <span v-else class="text-slate-300 text-xs">-</span>
                   </td>
                   <td v-if="showRealPrices" class="p-3 text-center">
@@ -471,7 +471,7 @@ function getStatusLabel(status: string) {
                   <td colspan="4"></td>
                   <td class="p-4 text-xl font-bold text-right bg-indigo-50/50" colspan="2">
                     <span v-if="averageMargin > 0" :class="averageMargin >= 20 ? 'text-emerald-600' : 'text-amber-600'">
-                      {{ averageMargin.toFixed(1) }}%
+                      {{ Math.round(averageMargin) }}%
                     </span>
                     <span v-else class="text-slate-300">-</span>
                   </td>

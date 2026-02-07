@@ -228,7 +228,8 @@ function formatDate(date: string) {
 }
 
 function formatQty(qty: number) {
-  return Math.round(qty);
+  // Remove trailing zeros if integer, otherwise show up to 2 decimals
+  return Number(qty).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
 function formatCurrency(amount: number) {

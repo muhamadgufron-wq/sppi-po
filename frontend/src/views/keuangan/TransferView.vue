@@ -237,7 +237,7 @@ function formatDate(date: string) {
 }
 
 function formatQty(qty: number) {
-  return Math.round(qty);
+  return Number(qty).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
 function formatCurrency(amount: number) {

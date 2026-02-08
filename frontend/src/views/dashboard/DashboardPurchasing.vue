@@ -2,7 +2,7 @@
   <div class="animate-[fadeIn_0.5s_ease-out]">
     <div class="max-w-[1600px] mx-auto">
       <div class="mb-8">
-        <h1 class="m-0 text-2xl md:text-3xl font-bold text-slate-800 tracking-tight">Halo, {{ authStore.user?.nama_lengkap || 'Tim Lapangan' }}</h1>
+        <h1 class="m-0 text-2xl md:text-3xl font-bold text-slate-800 tracking-tight">Halo, {{ authStore.user?.nama_lengkap || 'Purchasing' }}</h1>
         <p class="m-0 mt-2 text-slate-500 font-medium">Tugas belanja anda hari ini.</p>
       </div>
 

@@ -289,7 +289,7 @@ function getStatusLabel(status: string) {
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 class="text-2xl md:text-3xl font-bold text-slate-800 tracking-tight mb-2">
-            {{ isHistory ? 'Riwayat Belanja' : 'Belanja Lapangan' }}
+            {{ isHistory ? 'Riwayat Belanja' : 'Upload Bukti Belanja' }}
           </h1>
           <p class="text-slate-500 font-medium">
             {{ isHistory ? 'Daftar belanja yang telah diselesaikan.' : 'Upload bukti dan input harga real.' }}

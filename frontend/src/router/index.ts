@@ -60,12 +60,12 @@ const router = createRouter({
       component: () => import('../views/keuangan/TransferView.vue'),
       meta: { requiresAuth: true, roles: [UserRole.KEUANGAN], layout: 'admin' }
     },
-    // Lapangan routes
+    // Purchasing routes
     {
       path: '/shopping',
       name: 'shopping',
-      component: () => import('../views/lapangan/ShoppingView.vue'),
-      meta: { requiresAuth: true, roles: [UserRole.LAPANGAN], layout: 'admin' }
+      component: () => import('../views/purchasing/ShoppingView.vue'),
+      meta: { requiresAuth: true, roles: [UserRole.PURCHASING], layout: 'admin' }
     }
   ]
 });

@@ -80,7 +80,7 @@ const menus: Record<string, MenuEntry[]> = {
     { type: 'item', label: 'Transfer Dana', path: '/transfer', icon: Send },
     { type: 'item', label: 'Riwayat Transfer', path: '/transfer?tab=history', icon: History },
   ],
-  LAPANGAN: [
+  PURCHASING: [
     { type: 'item', label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
     { type: 'group', label: 'Operations' },
     { type: 'item', label: 'Belanja', path: '/shopping', icon: ShoppingCart },

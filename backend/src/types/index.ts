@@ -5,7 +5,7 @@ export enum UserRole {
   ADMIN = 'ADMIN',
   MANAJER = 'MANAJER',
   KEUANGAN = 'KEUANGAN',
-  LAPANGAN = 'LAPANGAN'
+  PURCHASING = 'PURCHASING'
 }
 
 export interface User {

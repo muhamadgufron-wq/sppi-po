@@ -8,7 +8,7 @@ import { upload, uploadToCloudinary } from '../middleware/upload.js';
 const router = Router();
 
 // Get active shopping (sudah ditransfer keuangan)
-router.get('/active', authenticateToken, authorizeRoles(UserRole.LAPANGAN), async (req: AuthRequest, res: Response) => {
+router.get('/active', authenticateToken, authorizeRoles(UserRole.PURCHASING), async (req: AuthRequest, res: Response) => {
   try {
     const pos = await query<PurchaseOrder[]>(
       `SELECT po.*, 
@@ -44,7 +44,7 @@ router.get('/active', authenticateToken, authorizeRoles(UserRole.LAPANGAN), asyn
 });
 
 // Get shopping history
-router.get('/history', authenticateToken, authorizeRoles(UserRole.LAPANGAN), async (req: AuthRequest, res: Response) => {
+router.get('/history', authenticateToken, authorizeRoles(UserRole.PURCHASING), async (req: AuthRequest, res: Response) => {
   try {
     const pos = await query<PurchaseOrder[]>(
       `SELECT po.*, 
@@ -83,7 +83,7 @@ router.get('/history', authenticateToken, authorizeRoles(UserRole.LAPANGAN), asy
 });
 
 // Update shopping items (qty real & harga real)
-router.post('/:poId/items', authenticateToken, authorizeRoles(UserRole.LAPANGAN), validateRequest(shoppingUpdateSchema), async (req: AuthRequest, res: Response) => {
+router.post('/:poId/items', authenticateToken, authorizeRoles(UserRole.PURCHASING), validateRequest(shoppingUpdateSchema), async (req: AuthRequest, res: Response) => {
   try {
     const { poId } = req.params;
     const updateData = req.body;
@@ -155,7 +155,7 @@ router.post('/:poId/items', authenticateToken, authorizeRoles(UserRole.LAPANGAN)
 });
 
 // Upload shopping proof
-router.post('/:poId/proof', authenticateToken, authorizeRoles(UserRole.LAPANGAN), upload.array('bukti_belanja', 5), async (req: AuthRequest, res: Response) => {
+router.post('/:poId/proof', authenticateToken, authorizeRoles(UserRole.PURCHASING), upload.array('bukti_belanja', 5), async (req: AuthRequest, res: Response) => {
   try {
     const { poId } = req.params;
     const { tanggal_belanja, keterangan } = req.body;
@@ -209,7 +209,7 @@ router.post('/:poId/proof', authenticateToken, authorizeRoles(UserRole.LAPANGAN)
 });
 
 // Complete shopping
-router.post('/:poId/complete', authenticateToken, authorizeRoles(UserRole.LAPANGAN), upload.any(), async (req: AuthRequest, res: Response) => {
+router.post('/:poId/complete', authenticateToken, authorizeRoles(UserRole.PURCHASING), upload.any(), async (req: AuthRequest, res: Response) => {
   try {
     const { poId } = req.params;
     const { real_prices } = req.body; // JSON string of array

@@ -11,7 +11,7 @@ interface Dapur {
   id: number;
   kode_dapur: string;
   nama_dapur: string;
-  pic?: string;
+  pic_name?: string;
 }
 
 interface POPreview {
@@ -42,8 +42,8 @@ const selectedDapurData = computed(() => {
 watch(selectedDapur, (newVal) => {
   if (newVal) {
     const dapur = dapurs.value.find(d => d.id === Number(newVal));
-    if (dapur?.pic) {
-      upNama.value = dapur.pic;
+    if (dapur?.pic_name) {
+      upNama.value = dapur.pic_name;
     }
   } else {
     upNama.value = '';
@@ -255,9 +255,9 @@ function formatCurrency(amount: number) {
               {{ dapur.nama_dapur }} ({{ dapur.kode_dapur }})
             </option>
           </select>
-          <p v-if="selectedDapurData?.pic" class="mt-2 text-xs text-slate-500 flex items-center gap-1.5">
+          <p v-if="selectedDapurData?.pic_name" class="mt-2 text-xs text-slate-500 flex items-center gap-1.5">
             <User class="w-3.5 h-3.5" />
-            PIC: {{ selectedDapurData.pic }}
+            PIC: {{ selectedDapurData.pic_name }}
           </p>
         </div>
 

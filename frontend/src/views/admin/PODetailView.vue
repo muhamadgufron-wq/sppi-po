@@ -124,7 +124,7 @@ function exportToPDF() {
       item.nama_barang,
       formatQty(item.qty_estimasi),
       item.satuan,
-      item.estimasi_susut ? Number(item.estimasi_susut) : '-',
+      item.estimasi_susut,
       formatCurrency(item.harga_modal || 0),
       formatCurrency(item.total_modal || 0),
       formatCurrency(item.harga_jual || 0),
@@ -375,12 +375,11 @@ function getStatusLabel(status: string) {
                 <tr v-for="item in po.items" :key="item.id" class="hover:bg-slate-50/50 border-b border-slate-100 last:border-0 transition-colors">
                   <td class="p-3 text-slate-800 font-semibold">
                     {{ item.nama_barang }}
-                    <span v-if="item.kategori_sayuran" class="block text-[10px] text-slate-400 font-normal">{{ item.kategori_sayuran }}</span>
                   </td>
                   <td class="p-3 text-right text-slate-700">{{ formatQty(item.qty_estimasi) }}</td>
                   <td class="p-3 text-slate-500 text-xs">{{ item.satuan }}</td>
                   <td class="p-3 text-center text-amber-700 font-bold bg-amber-50/10 border-l border-r border-slate-50">
-                    <span v-if="(item.estimasi_susut || 0) > 0">{{ Number(item.estimasi_susut) }}</span>
+                    <span v-if="item.estimasi_susut">{{item.estimasi_susut}}</span>
                     <span v-else class="text-slate-300">-</span>
                   </td>
                   

@@ -202,7 +202,7 @@ async function saveDraft() {
         nama_barang: item.nama_barang,
         qty_estimasi: item.qty_estimasi,
         satuan: item.satuan,
-        harga_estimasi: item.harga_modal, // For backwards compatibility
+        harga_estimasi: item.harga_modal,
         estimasi_susut: item.estimasi_susut,
         harga_modal: item.harga_modal,
         total_modal: item.total_modal,
@@ -466,7 +466,7 @@ async function submitForApproval() {
                         <option value="Kg">Kg</option>
                         <option value="Pcs">Pcs</option>
                         <option value="Box">Box</option>
-                        <option value="Karung">Karung</option>
+                        <option value="Botol">Botol</option>
                         <option value="Liter">Liter</option>
                         <option value="Ikat">Ikat</option>
                      </select>

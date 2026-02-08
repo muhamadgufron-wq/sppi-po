@@ -116,7 +116,7 @@ function exportToPDF() {
   doc.text(`Dibuat Oleh: ${po.value.created_by_name}`, 14, 40);
 
   // Table Headers
-  const headers = [['Item', 'Qty', 'Satuan', 'H. Modal', 'T. Modal', 'H. Jual', 'T. Jual', 'Profit', 'Margin %']];
+  const headers = [['Item', 'Qty', 'Satuan', 'Susut', 'H. Modal', 'T. Modal', 'H. Jual', 'T. Jual', 'Profit', 'Margin %']];
 
   // Table Rows
   const rows = po.value.items.map((item: any) => {
@@ -124,6 +124,7 @@ function exportToPDF() {
       item.nama_barang,
       formatQty(item.qty_estimasi),
       item.satuan,
+      item.estimasi_susut ? Number(item.estimasi_susut) : '-',
       formatCurrency(item.harga_modal || 0),
       formatCurrency(item.total_modal || 0),
       formatCurrency(item.harga_jual || 0),
@@ -357,6 +358,7 @@ function getStatusLabel(status: string) {
                   <th class="p-3 text-left font-bold text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-200">Barang</th>
                   <th class="p-3 text-right font-bold text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-200">Qty</th>
                   <th class="p-3 text-left font-bold text-[11px] text-slate-500 uppercase tracking-wider border-b border-slate-200">Sat</th>
+                  <th class="p-3 text-center font-bold text-[11px] text-amber-600 uppercase tracking-wider border-b border-slate-200" title="Estimasi Susut">Susut</th>
                   
                   <!-- Profit Analysis Columns -->
                   <th class="p-3 text-right font-bold text-[11px] text-violet-600 uppercase tracking-wider border-b border-violet-100 bg-violet-50/30">H. Modal</th>
@@ -377,6 +379,10 @@ function getStatusLabel(status: string) {
                   </td>
                   <td class="p-3 text-right text-slate-700">{{ formatQty(item.qty_estimasi) }}</td>
                   <td class="p-3 text-slate-500 text-xs">{{ item.satuan }}</td>
+                  <td class="p-3 text-center text-amber-700 font-bold bg-amber-50/10 border-l border-r border-slate-50">
+                    <span v-if="(item.estimasi_susut || 0) > 0">{{ Number(item.estimasi_susut) }}</span>
+                    <span v-else class="text-slate-300">-</span>
+                  </td>
                   
                   <!-- Profit Analysis Cells -->
                   <td class="p-3 text-right text-violet-700 font-medium bg-violet-50/10">

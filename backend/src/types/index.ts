@@ -234,3 +234,38 @@ export interface PriceInsight {
   is_outlier: boolean;
   outlier_percentage?: number;
 }
+
+// Invoice Types
+export interface Invoice {
+  id: number;
+  invoice_number: string;
+  dapur_id: number;
+  tanggal_invoice: Date;
+  periode_start: Date;
+  periode_end: Date;
+  up_nama?: string;
+  total_amount: number;
+  sisa_tagihan: number;
+  metode_pembayaran?: 'CASH' | 'TRANSFER' | 'GIRO';
+  status: 'DRAFT' | 'ISSUED' | 'PAID' | 'CANCELLED';
+  created_by?: number;
+  created_at: Date;
+  issued_at?: Date;
+  paid_at?: Date;
+  items?: InvoiceItem[];
+  // Joined fields
+  nama_dapur?: string;
+  kode_dapur?: string;
+  created_by_name?: string;
+}
+
+export interface InvoiceItem {
+  id: number;
+  invoice_id: number;
+  po_id: number;
+  po_number: string;
+  tanggal_po: Date;
+  nominal: number;
+  created_at: Date;
+}
+

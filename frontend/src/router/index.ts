@@ -66,6 +66,24 @@ const router = createRouter({
       name: 'shopping',
       component: () => import('../views/purchasing/ShoppingView.vue'),
       meta: { requiresAuth: true, roles: [UserRole.PURCHASING], layout: 'admin' }
+    },
+    {
+      path: '/invoices',
+      name: 'invoice-list',
+      component: () => import('../views/purchasing/InvoiceListView.vue'),
+      meta: { requiresAuth: true, roles: [UserRole.PURCHASING], layout: 'admin' }
+    },
+    {
+      path: '/invoices/generate',
+      name: 'generate-invoice',
+      component: () => import('../views/purchasing/GenerateInvoiceView.vue'),
+      meta: { requiresAuth: true, roles: [UserRole.PURCHASING], layout: 'admin' }
+    },
+    {
+      path: '/invoices/:id',
+      name: 'invoice-detail',
+      component: () => import('../views/purchasing/InvoiceDetailView.vue'),
+      meta: { requiresAuth: true, roles: [UserRole.PURCHASING], layout: 'admin' }
     }
   ]
 });

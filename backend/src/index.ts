@@ -9,6 +9,7 @@ import keuanganRoutes from './routes/keuangan.routes.js';
 import transferRoutes from './routes/transfer.routes.js';
 import shoppingRoutes from './routes/shopping.routes.js';
 import dapurRoutes from './routes/dapur.routes.js';
+import invoiceRoutes from './routes/invoice.routes.js';
 
 // Load environment variables
 dotenv.config();
@@ -52,6 +53,7 @@ app.use('/api/keuangan', keuanganRoutes);
 app.use('/api/transfer', transferRoutes);
 app.use('/api/shopping', shoppingRoutes);
 app.use('/api/dapur', dapurRoutes);
+app.use('/api/invoices', invoiceRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

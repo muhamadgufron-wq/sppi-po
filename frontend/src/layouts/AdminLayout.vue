@@ -13,7 +13,8 @@ import {
   ShoppingCart, 
   User,
   LogOut,
-  Store
+  Store,
+  FileText
 } from 'lucide-vue-next';
 
 const router = useRouter();
@@ -85,6 +86,8 @@ const menus: Record<string, MenuEntry[]> = {
     { type: 'group', label: 'Operations' },
     { type: 'item', label: 'Belanja', path: '/shopping', icon: ShoppingCart },
     { type: 'item', label: 'Riwayat', path: '/shopping?tab=history', icon: History },
+    { type: 'group', label: 'Invoice' },
+    { type: 'item', label: 'Invoice', path: '/invoices', icon: FileText },
   ]
 };
 

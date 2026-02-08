@@ -115,7 +115,7 @@ function executeLogout() {
     ></div>
     <!-- Sidebar -->
     <aside 
-      class="fixed top-0 left-0 bottom-0 w-[280px] bg-white border-r border-emerald-100 z-50 transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:h-screen md:sticky overflow-y-auto shadow-[4px_0_24px_rgba(0,0,0,0.02)]"
+      class="fixed top-0 left-0 bottom-0 w-[280px] bg-white border-r border-emerald-100 z-50 transform transition-transform duration-300 ease-in-out md:translate-x-0 md:fixed md:h-screen overflow-y-auto shadow-[4px_0_24px_rgba(0,0,0,0.02)]"
       :class="isSidebarOpen ? 'translate-x-0' : '-translate-x-full'"
     >
       <!-- Logo Area -->
@@ -175,10 +175,12 @@ function executeLogout() {
     </aside>
 
     <!-- Main Content Wrapper -->
-    <div class="flex-1 flex flex-col min-w-0 bg-[#F0FDF4]/30">
+    <div class="flex-1 flex flex-col min-w-0 bg-[#F0FDF4]/30 md:pl-[280px]">
       
       <!-- Top Header -->
-      <header class="h-20 bg-white/80 backdrop-blur-xl border-b border-emerald-100/50 sticky top-0 z-30 px-4 md:px-8 flex items-center justify-between shadow-[0_4px_20px_-10px_rgba(0,0,0,0.02)]">
+      <header 
+        class="h-20 bg-white/80 backdrop-blur-xl border-b border-emerald-100/50 fixed top-0 right-0 z-30 px-4 md:px-8 flex items-center justify-between shadow-[0_4px_20px_-10px_rgba(0,0,0,0.02)] transition-all duration-300 left-0 md:left-[280px]"
+      >
         <div class="flex items-center gap-4">
           <!-- Mobile Toggle -->
           <button 
@@ -211,7 +213,7 @@ function executeLogout() {
       </header>
 
       <!-- Page Content -->
-      <main class="flex-1 p-4 md:p-8 overflow-x-hidden">
+      <main class="flex-1 p-4 md:p-8 overflow-x-hidden pt-24 md:pt-28">
         <slot />
       </main>
     </div>

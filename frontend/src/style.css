@@ -1,1 +1,22 @@
 @import "tailwindcss";
+
+
+/* SweetAlert2 Layout Shift Fix (Robust) */
+
+/* 1. Prevent width change by reserving scrollbar space */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* 2. Prevent SweetAlert from manipulating body padding/overflow */
+body.swal2-shown {
+  padding-right: 0 !important;
+  overflow-y: auto !important; /* Allow normal scrolling behavior */
+}
+
+/* 3. Prevent SweetAlert from manipulating height (fixes sticky/fixed positioning issues) */
+html.swal2-height-auto,
+body.swal2-height-auto {
+  height: auto !important; 
+  min-height: 100vh; /* Ensure full height coverage */
+}

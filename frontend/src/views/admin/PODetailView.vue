@@ -379,7 +379,7 @@ function getStatusLabel(status: string) {
                   <td class="p-3 text-right text-slate-700">{{ formatQty(item.qty_estimasi) }}</td>
                   <td class="p-3 text-slate-500 text-xs">{{ item.satuan }}</td>
                   <td class="p-3 text-center text-amber-700 font-bold bg-amber-50/10 border-l border-r border-slate-50">
-                    <span v-if="item.estimasi_susut">{{item.estimasi_susut}}</span>
+                    <span v-if="item.estimasi_susut">{{Number(item.estimasi_susut)}}</span>
                     <span v-else class="text-slate-300">-</span>
                   </td>
                   

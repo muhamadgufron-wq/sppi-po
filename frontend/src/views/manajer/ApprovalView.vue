@@ -437,6 +437,7 @@ function closeImageViewer() {
                     <th class="px-4 py-3">Item</th>
                     <th class="px-4 py-3 text-center">Qty</th>
                     <th class="px-4 py-3 text-center">Satuan</th>
+                    <th class="px-4 py-3 text-center text-amber-600">Susut</th>
                     <th class="px-4 py-3 text-right bg-violet-50/30 text-violet-700">H. Modal</th>
                     <th class="px-4 py-3 text-right bg-violet-50/30 text-violet-700">T. Modal</th>
                     <th class="px-4 py-3 text-right bg-emerald-50/30 text-emerald-700">H. Jual</th>
@@ -455,6 +456,10 @@ function closeImageViewer() {
                     </td>
                     <td class="px-4 py-3 text-center text-slate-500">
                       {{ item.satuan }}
+                    </td>
+                    <td class="px-4 py-3 text-center text-amber-700 font-bold bg-amber-50/10">
+                      <span v-if="item.estimasi_susut">{{ Number(item.estimasi_susut) }}</span>
+                      <span v-else class="text-slate-300">-</span>
                     </td>
                     <td class="px-4 py-3 text-right text-violet-700 bg-violet-50/10">
                       <span v-if="item.harga_modal !== null && item.harga_modal !== undefined">Rp {{ formatCurrency(item.harga_modal) }}</span>

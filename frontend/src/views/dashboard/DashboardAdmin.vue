@@ -44,7 +44,7 @@ async function fetchData() {
     }
 
     // 2. Fetch Recent POs
-    const poListRes = await api.get('/po', { params: { limit: 5 } });
+    const poListRes = await api.get('/po', { params: { limit: 3 } });
     if (poListRes.data.success) {
       recentPOs.value = poListRes.data.data;
     }

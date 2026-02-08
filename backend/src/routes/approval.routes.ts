@@ -24,7 +24,7 @@ router.get('/pending', authenticateToken, authorizeRoles(UserRole.MANAJER), asyn
     for (let po of pos) {
       const items = await query(
         `SELECT id, po_id, nama_barang, qty_estimasi, satuan, 
-                harga_estimasi, subtotal_estimasi, kategori_sayuran,
+                harga_estimasi, estimasi_susut, subtotal_estimasi, kategori_sayuran,
                 COALESCE(harga_modal, 0) as harga_modal, 
                 COALESCE(total_modal, 0) as total_modal, 
                 COALESCE(harga_jual, 0) as harga_jual, 
@@ -74,7 +74,7 @@ router.get('/history', authenticateToken, authorizeRoles(UserRole.MANAJER), asyn
     for (let po of pos) {
       const items = await query(
         `SELECT id, po_id, nama_barang, qty_estimasi, satuan, 
-                harga_estimasi, subtotal_estimasi, kategori_sayuran,
+                harga_estimasi, estimasi_susut, subtotal_estimasi, kategori_sayuran,
                 COALESCE(harga_modal, 0) as harga_modal, 
                 COALESCE(total_modal, 0) as total_modal, 
                 COALESCE(harga_jual, 0) as harga_jual, 

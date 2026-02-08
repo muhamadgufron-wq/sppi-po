@@ -458,7 +458,7 @@ function closeImageViewer() {
                       {{ item.satuan }}
                     </td>
                     <td class="px-4 py-3 text-center text-amber-700 font-bold bg-amber-50/10">
-                      <span v-if="item.estimasi_susut">{{ Number(item.estimasi_susut) }}</span>
+                      <span v-if="(item.estimasi_susut || 0) > 0">{{ Number(item.estimasi_susut) }}</span>
                       <span v-else class="text-slate-300">-</span>
                     </td>
                     <td class="px-4 py-3 text-right text-violet-700 bg-violet-50/10">
